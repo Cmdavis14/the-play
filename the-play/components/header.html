@@ -1,16 +1,16 @@
 <nav class="flex items-center justify-between px-8 py-4 bg-white shadow-sm sticky top-0 z-50">
   <!-- Logo - visible on all screens -->
   <div class="flex items-center">
-    <a href="/pages/app/index.html" class="text-2xl font-bold gradient-text">The Play</a>
+    <a href="#" id="home-link" class="text-2xl font-bold gradient-text">The Play</a>
   </div>
   
   <!-- Desktop Navigation - hidden on mobile -->
   <div class="hidden md:flex items-center space-x-8">
-    <a href="/pages/app/index.html" class="font-medium text-gray-700 hover:text-purple-600">Home</a>
-    <a href="/pages/app/search.html" class="font-medium text-gray-700 hover:text-purple-600">Discover</a>
-    <a href="/pages/app/map.html" class="font-medium text-gray-700 hover:text-purple-600">Map</a>
-    <a href="/pages/app/index.html?tab=popular" class="font-medium text-gray-700 hover:text-purple-600">Popular</a>
-    <a href="/pages/app/messages.html" class="relative font-medium text-gray-700 hover:text-purple-600">
+    <a href="#" id="home-nav-link" class="font-medium text-gray-700 hover:text-purple-600">Home</a>
+    <a href="#" id="discover-link" class="font-medium text-gray-700 hover:text-purple-600">Discover</a>
+    <a href="#" id="map-link" class="font-medium text-gray-700 hover:text-purple-600">Map</a>
+    <a href="#" id="popular-link" class="font-medium text-gray-700 hover:text-purple-600">Popular</a>
+    <a href="#" id="messages-link" class="relative font-medium text-gray-700 hover:text-purple-600">
       <i class="fas fa-envelope mr-1"></i> Messages
       <span id="unread-messages-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
     </a>  
@@ -44,7 +44,7 @@
   
   <!-- Desktop Action Buttons - hidden on mobile -->
   <div class="hidden md:flex items-center space-x-4">
-    <a href="/pages/app/create-event.html" class="btn-primary" id="create-event-btn">Create Event</a>
+    <a href="#" id="create-event-btn" class="btn-primary">Create Event</a>
     <button id="logout-button" class="btn-secondary">Logout</button>
     <div class="w-10 h-10 rounded-full bg-gray-300 overflow-hidden cursor-pointer" id="header-profile-pic-container">
       <img id="header-profile-pic" src="/api/placeholder/100/100" alt="Profile" class="w-full h-full object-cover">
@@ -68,16 +68,16 @@
 <!-- Mobile Menu (hidden by default) -->
 <div id="mobile-menu" class="hidden md:hidden bg-white shadow-sm px-8 py-4 border-t border-gray-200">
   <div class="flex flex-col space-y-4">
-    <a href="/pages/app/index.html" class="font-medium text-gray-700 hover:text-purple-600 py-2">Home</a>
-    <a href="/pages/app/search.html" class="font-medium text-gray-700 hover:text-purple-600 py-2">Discover</a>
-    <a href="/pages/app/map.html" class="font-medium text-gray-700 hover:text-purple-600 py-2">Map</a>
-    <a href="/pages/app/index.html?tab=popular" class="font-medium text-gray-700 hover:text-purple-600 py-2">Popular</a>
-    <a href="/pages/app/messages.html" class="relative font-medium text-gray-700 hover:text-purple-600 py-2">
+    <a href="#" id="mobile-home-link" class="font-medium text-gray-700 hover:text-purple-600 py-2">Home</a>
+    <a href="#" id="mobile-discover-link" class="font-medium text-gray-700 hover:text-purple-600 py-2">Discover</a>
+    <a href="#" id="mobile-map-link" class="font-medium text-gray-700 hover:text-purple-600 py-2">Map</a>
+    <a href="#" id="mobile-popular-link" class="font-medium text-gray-700 hover:text-purple-600 py-2">Popular</a>
+    <a href="#" id="mobile-messages-link" class="relative font-medium text-gray-700 hover:text-purple-600 py-2">
       <i class="fas fa-envelope mr-1"></i> Messages
         <span id="mobile-unread-messages-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
     </a>
     <div class="border-t border-gray-200 py-2"></div>
-    <a href="/pages/app/create-event.html" class="font-medium text-purple-600 hover:text-purple-700 py-2">Create Event</a>
+    <a href="#" id="mobile-create-event-link" class="font-medium text-purple-600 hover:text-purple-700 py-2">Create Event</a>
     <button id="mobile-logout-button" class="font-medium text-red-600 hover:text-red-700 py-2 text-left">Logout</button>
   </div>
 </div>
@@ -116,6 +116,9 @@
     </div>
   </div>
 </div>
+
+<!-- Include the app navigation helper script -->
+<script src="../../scripts/app-navigation.js"></script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -166,95 +169,188 @@
       });
     }
     
-    // Header search form validation and handling
-    const headerSearchForm = document.getElementById('header-search-form');
-    if (headerSearchForm) {
-      headerSearchForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const searchInput = headerSearchForm.querySelector('input[name="q"]');
-        const query = searchInput.value.trim();
-        
-        // Prevent empty searches
-        if (!query) {
-          searchInput.focus();
-          return;
-        }
-        
-        // Navigate to search page with query
-        window.location.href = "/pages/app/search.html?q=" + encodeURIComponent(query);
-      });
-    }
+    // Setup Navigation Links
     
-    // Mobile search form handling
-    const mobileSearchForm = document.getElementById('mobile-search-form');
-    if (mobileSearchForm) {
-      mobileSearchForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const searchInput = document.getElementById('mobile-search-input');
-        const query = searchInput.value.trim();
-        
-        // Prevent empty searches
-        if (!query) {
-          searchInput.focus();
-          return;
-        }
-        
-        // Navigate to search page with query
-        window.location.href = "/pages/app/search.html?q=" + encodeURIComponent(query);
-        
-        // Close mobile search overlay
-        mobileSearchOverlay.classList.add('hidden');
-        document.body.style.overflow = 'auto'; // Restore scrolling
-      });
-    }
+    // Desktop navigation
+    document.getElementById('home-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('index.html');
+    });
     
-    // Set up logout handlers for both desktop and mobile
-    const logoutButtons = [
-      document.getElementById('logout-button'),
-      document.getElementById('mobile-logout-button')
-    ];
+    document.getElementById('home-nav-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('index.html');
+    });
     
-    logoutButtons.forEach(button => {
-      if (button) {
-        button.addEventListener('click', function() {
-          console.log("Logout button clicked");
-          
-          // Direct Firebase logout method
-          if (typeof firebase !== 'undefined' && firebase.auth) {
-            firebase.auth().signOut().then(() => {
-              console.log("Logged out successfully");
-              alert("You have been logged out.");
-              window.location.href = "/pages/auth/login.html";
-            }).catch((error) => {
-              console.error("Error signing out:", error);
-              alert("Error logging out: " + error.message);
-            });
-          } else {
-            alert("Firebase is not initialized. Cannot log out.");
-          }
-        });
+    document.getElementById('discover-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('search.html');
+    });
+    
+    document.getElementById('map-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('map.html');
+    });
+    
+    document.getElementById('popular-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('index.html?tab=popular');
+    });
+    
+    document.getElementById('messages-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('messages.html');
+    });
+    
+    document.getElementById('create-event-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('create-event.html');
+    });
+    
+    // Mobile navigation
+    document.getElementById('mobile-home-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('index.html');
+    });
+    
+    document.getElementById('mobile-discover-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('search.html');
+    });
+    
+    document.getElementById('mobile-map-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('map.html');
+    });
+    
+    document.getElementById('mobile-popular-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('index.html?tab=popular');
+    });
+    
+    document.getElementById('mobile-messages-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('messages.html');
+    });
+    
+    document.getElementById('mobile-create-event-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateTo('create-event.html');
+    });
+    
+    // Logout buttons
+    document.getElementById('logout-button').addEventListener('click', function() {
+      if (window.AppNavigation) {
+        window.AppNavigation.logoutUser();
+      } else {
+        handleLogout();
+      }
+    });
+    
+    document.getElementById('mobile-logout-button').addEventListener('click', function() {
+      if (window.AppNavigation) {
+        window.AppNavigation.logoutUser();
+      } else {
+        handleLogout();
       }
     });
     
     // Profile picture click handler
-    const profilePicContainer = document.getElementById('header-profile-pic-container');
-    if (profilePicContainer) {
-      profilePicContainer.addEventListener('click', function() {
-        window.location.href = '/pages/app/profile.html';
-      });
+    document.getElementById('header-profile-pic-container').addEventListener('click', function() {
+      navigateTo('profile.html');
+    });
+    
+    // Search form handling
+    document.getElementById('header-search-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const searchInput = document.getElementById('header-search-input');
+      const query = searchInput.value.trim();
+      
+      if (query) {
+        navigateTo(`search.html?q=${encodeURIComponent(query)}`);
+      } else {
+        searchInput.focus();
+      }
+    });
+    
+    // Mobile search form handling
+    document.getElementById('mobile-search-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const searchInput = document.getElementById('mobile-search-input');
+      const query = searchInput.value.trim();
+      
+      if (query) {
+        navigateTo(`search.html?q=${encodeURIComponent(query)}`);
+        // Close mobile search overlay
+        mobileSearchOverlay.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      } else {
+        searchInput.focus();
+      }
+    });
+    
+    // Navigation helper function (fallback if app-navigation.js is not loaded)
+    function navigateTo(page) {
+      if (window.AppNavigation) {
+        window.AppNavigation.navigateTo(page);
+      } else {
+        console.log("AppNavigation not loaded, using fallback navigation");
+        
+        // Determine base path
+        let basePath = '';
+        const path = window.location.pathname;
+        
+        if (path.includes('/pages/app/')) {
+          basePath = '';
+        } else if (path.includes('/pages/auth/')) {
+          basePath = '../app/';
+        } else {
+          basePath = 'pages/app/';
+        }
+        
+        // Navigate to the page
+        window.location.href = basePath + page;
+      }
     }
     
-    // Add Create Event button handler
-    const createEventBtn = document.getElementById('create-event-btn');
-    if (createEventBtn) {
-      createEventBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        window.location.href = '/pages/app/create-event.html';
-      });
+    // Fallback logout handler
+    function handleLogout() {
+      console.log("Logout button clicked - using fallback logout");
+      
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        console.log("Using Firebase for logout");
+        
+        firebase.auth().signOut()
+          .then(() => {
+            console.log("Logged out successfully");
+            
+            // Determine login page path
+            let loginPath = '';
+            const path = window.location.pathname;
+            
+            if (path.includes('/pages/app/')) {
+              loginPath = '../auth/login.html';
+            } else if (path.includes('/pages/auth/')) {
+              loginPath = 'login.html';
+            } else {
+              loginPath = 'pages/auth/login.html';
+            }
+            
+            console.log("Redirecting to:", loginPath);
+            window.location.href = loginPath;
+          })
+          .catch((error) => {
+            console.error("Error signing out:", error);
+            alert("Error logging out: " + error.message);
+          });
+      } else {
+        console.error("Firebase auth not available for logout");
+        alert("Firebase is not initialized. Cannot log out.");
+      }
     }
   });
   
-  // Set user profile if available
+  // Set user profile picture if available
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof firebase !== 'undefined' && firebase.auth) {
       const currentUser = firebase.auth().currentUser;
@@ -264,59 +360,6 @@
           profilePic.src = currentUser.photoURL;
         }
       }
-    }
-  });
-
-// Check unread messages function
-  async function checkUnreadMessages() {
-    if (typeof firebase === 'undefined' || !firebase.auth().currentUser) return;
-    
-    try {
-      // Import chat service
-      const { default: chatService } = await import('/scripts/services/chat-service.js');
-      
-      // Get unread count
-      const unreadCount = await chatService.getUnreadMessagesCount();
-      
-      // Update badges
-      const badges = [
-        document.getElementById('unread-messages-badge'),
-        document.getElementById('mobile-unread-messages-badge')
-      ];
-      
-      badges.forEach(badge => {
-        if (badge) {
-          if (unreadCount > 0) {
-            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-            badge.classList.remove('hidden');
-          } else {
-            badge.classList.add('hidden');
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Error checking unread messages:', error);
-    }
-  }
-  
-  // Check for unread messages when the page loads and the user is authenticated
-  document.addEventListener('DOMContentLoaded', function() {
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-      firebase.auth().onAuthStateChanged(user => {
-        if (user) {
-          // Update profile picture
-          const profilePic = document.getElementById('header-profile-pic');
-          if (profilePic && user.photoURL) {
-            profilePic.src = user.photoURL;
-          }
-          
-          // Check for unread messages
-          checkUnreadMessages();
-          
-          // Set up periodic check every minute
-          setInterval(checkUnreadMessages, 60000);
-        }
-      });
     }
   });
 </script>

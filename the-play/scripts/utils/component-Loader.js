@@ -78,4 +78,4 @@ function loadComponent(targetElementId, componentPath) {
 }
 
 // Export the function
-export { loadComponent };
+export { loadComponent }
