@@ -4,29 +4,118 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Play</title>
+  <!-- Load Firebase Libraries -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="scripts/firebase/config.js"></script>
+  
+  <!-- Load Firebase config -->
   <script>
-    // Check authentication state and redirect
-    document.addEventListener('DOMContentLoaded', function() {
-      firebase.auth().onAuthStateChanged(user => {
-        if (user) {
-          // User is signed in, redirect to app
-          window.location.href = 'pages/app/index.html?uid=' + user.uid;
-        } else {
-          // No user is signed in, redirect to login
-          window.location.href = 'pages/auth/login.html';
-        }
-      });
-    });
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBOPjdRIDVst4uZg6oqNPLhlqgj0XwqPH8",
+      authDomain: "the-play-8f454.firebaseapp.com",
+      projectId: "the-play-8f454",
+      storageBucket: "the-play-8f454.firebasestorage.app",
+      messagingSenderId: "919736772232",
+      appId: "1:919736772232:web:5d52b627785e5569a7e13d",
+      measurementId: "G-KYB0MJ4VKS",
+      databaseURL: "https://the-play-8f454-default-rtdb.firebaseio.com"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
   </script>
+  
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f8f9fa;
+    }
+    
+    .loading-container {
+      text-align: center;
+    }
+    
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: #6C63FF;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: #666;
+      font-size: 18px;
+    }
+    
+    .error-message {
+      color: #ff4d4f;
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <!-- Loading animation or splash screen could go here -->
-  <div style="display: flex; justify-content: center; align-items:
-center; height: 100vh;">
-    <p>Loading...</p>
+  <!-- Loading animation -->
+  <div class="loading-container">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Loading...</p>
+    <p class="error-message" id="error-message">
+      Failed to connect to authentication service. <a href="pages/auth/login.html">Click here to login</a>.
+    </p>
   </div>
+
+  <script>
+    // Show error message if loading takes too long
+    const errorTimeout = setTimeout(() => {
+      document.getElementById('error-message').style.display = 'block';
+    }, 10000); // Show error after 10 seconds
+    
+    // Check authentication state and redirect
+    document.addEventListener('DOMContentLoaded', function() {
+      // Confirm Firebase is initialized
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        console.log("Firebase initialized, checking auth state...");
+        
+        firebase.auth().onAuthStateChanged(user => {
+          // Clear error timeout since we got a response
+          clearTimeout(errorTimeout);
+          
+          if (user) {
+            // User is signed in, redirect to app
+            console.log("User is signed in, redirecting to app...");
+            window.location.href = 'pages/app/index.html?uid=' + user.uid;
+          } else {
+            // No user is signed in, redirect to login
+            console.log("No user is signed in, redirecting to login...");
+            window.location.href = 'pages/auth/login.html';
+          }
+        }, error => {
+          // Auth state observer error
+          console.error("Auth state error:", error);
+          document.getElementById('error-message').style.display = 'block';
+        });
+      } else {
+        // Firebase not available or not initialized, redirect to login
+        console.error("Firebase not initialized properly");
+        setTimeout(() => {
+          window.location.href = 'pages/auth/login.html';
+        }, 2000);
+      }
+    });
+  </script>
 </body>
 </html>
