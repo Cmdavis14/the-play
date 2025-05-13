@@ -1,3 +1,7 @@
+const increment = firebase.database.FieldValue.increment;
+export { auth, firestore, storage, messaging, database, increment };
+
+
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBOPjdRIDVst4uZg6oqNPLhlqgj0XwqPH8",

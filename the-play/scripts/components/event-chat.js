@@ -1,6 +1,8 @@
 import chatService from '../services/chat-service.js';
 import errorHandler from '../utils/error-handler.js';
 import { formatTime } from '../utils/date-format.js';
+import { firebase } from '../firebase/config.js';
+
 
 class EventChat {
   constructor(containerId, eventId) {

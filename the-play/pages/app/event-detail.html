@@ -234,44 +234,83 @@
     }
     
     async function loadEventDetails(eventId) {
-      try {
-        const db = firebase.firestore();
-        const doc = await db.collection('events').doc(eventId).get();
-        
-        if (!doc.exists) {
-          showError('Event not found');
-          return;
-        }
-        
-        // Save event data
-        eventData = {
-          id: doc.id,
-          ...doc.data()
-        };
-        
-        // Populate UI with event data
-        populateEventDetails(eventData);
-        
-        // Check if user has RSVP'd
-        checkUserRSVP(eventId);
-        // Load RSVP modal
-        loadComponent('modal-container', '../../components/modal/rsvp-modal.innerHTML');
-        // Load Report Message Modal
-        loadComponent('modal-report-containter', '../../components/modals/report-message-modal.html');
-        // Load vibe checks for this event
-        loadVibeChecks(eventId);
-        
-        // Load similar events
-        loadSimilarEvents(eventData.category);
-        
-        // Hide loading, show details
-        document.getElementById('event-loading').classList.add('hidden');
-        document.getElementById('event-details').classList.remove('hidden');
-      } catch (error) {
-        console.error('Error loading event:', error);
-        showError('Failed to load event details');
-      }
+  try {
+    const db = firebase.firestore();
+    const doc = await db.collection('events').doc(eventId).get();
+    
+    if (!doc.exists) {
+      showError('Event not found');
+      return;
     }
+    
+    // Save event data
+    eventData = {
+      id: doc.id,
+      ...doc.data()
+    };
+    
+    // Populate UI with event data
+    populateEventDetails(eventData);
+    
+    // Check if user has RSVP'd
+    checkUserRSVP(eventId);
+    
+    // Load RSVP modal (fixing the path)
+    loadComponent('modal-container', '../../components/modals/rsvp-modal.html');
+    
+    // Load Report Message Modal
+    loadComponent('modal-report-containter', '../../components/modals/report-message-modal.html');
+    
+    // Load vibe checks for this event
+    loadVibeChecks(eventId);
+    
+    // Initialize the event chat
+    initializeEventChat(eventId);
+    
+    // Load similar events
+    loadSimilarEvents(eventData.category);
+    
+    // Hide loading, show details
+    document.getElementById('event-loading').classList.add('hidden');
+    document.getElementById('event-details').classList.remove('hidden');
+  } catch (error) {
+    console.error('Error loading event:', error);
+    showError('Failed to load event details');
+  }
+}
+
+function initializeEventChat(eventId) {
+  // Only initialize for authenticated users
+  if (!firebase.auth().currentUser) {
+    document.getElementById('event-chat-container').innerHTML = `
+        <div class="p-6 text-center">
+        <p class="text-gray-600 mb-3">Sign in to join the event chat</p>
+        <button class="btn-primary" onclick="window.location.href='../auth/login.html'">Sign In</button>
+        </div>
+    `;
+    return;
+  }
+
+  // Check if event is in the past
+  if (eventData.dateTime) {
+    const eventDate = eventData.dateTime.toDate ? eventData.dateTime.toDate() : new Date(eventData.dateTime);
+    const now = new Date();
+    
+    if (eventDate < now) {
+      // For past events, show archived message
+      document.getElementById('event-chat-container').innerHTML = `
+        <div class="p-6 text-center">
+          <p class="text-gray-600">This event has already taken place. The chat is now archived.</p>
+        </div>
+      `;
+      return;
+    }
+  }
+
+  // Initialize chat
+  eventChat = new EventChat('event-chat-container', eventId);
+  eventChat.initialize();
+}
     
     function initializeEventChat(eventId) {
         // Only initialize for authenticated users

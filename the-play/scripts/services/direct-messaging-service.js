@@ -1,6 +1,8 @@
 import { realtimeDB, auth, storage } from '../firebase/config.js';
-import { ref, set, push, onValue, update, get, query, orderByChild, limitToLast } from 'firebase/database';
+import { ref, set, push, onValue, update, remove, get, query, orderByChild, limitToLast, increment, onDisconnect } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+
 
 export const directMessagingService = {
   // Send direct message to another user
