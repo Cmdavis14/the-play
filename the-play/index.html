@@ -140,84 +140,72 @@
     <button id="login-btn" class="action-btn">Go to Login</button>
   </div>
 
-  <script>
-    // Add debug info to console
-    console.log("Index.html loaded at:", new Date().toISOString());
-    console.log("Current URL:", window.location.href);
+<script>
+  // Check authentication state and redirect
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM content loaded, checking Firebase...");
     
-    // Show error message and login button after timeout
-    const errorTimeout = setTimeout(function() {
+    // Before checking auth, make sure Firebase is available
+    if (typeof firebase === 'undefined') {
+      console.error("Firebase is not defined!");
+      document.getElementById('status-message').textContent = 'Firebase SDK not loaded';
       document.getElementById('error-message').style.display = 'block';
       document.getElementById('login-btn').style.display = 'inline-block';
-      document.getElementById('status-message').textContent = 'Authentication timed out';
-    }, 10000);
+      return;
+    }
     
-    // Login button handler
-    document.getElementById('login-btn').addEventListener('click', function() {
-      window.location.href = 'pages/auth/login.html';
-    });
+    console.log("Firebase is available, initializing auth check...");
     
-    // Check authentication state and redirect
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log("DOM content loaded, checking Firebase...");
+    try {
+      let authChecked = false;
       
-      // Before checking auth, make sure Firebase is available
-      if (typeof firebase === 'undefined') {
-        console.error("Firebase is not defined!");
-        document.getElementById('status-message').textContent = 'Firebase SDK not loaded';
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('login-btn').style.display = 'inline-block';
-        clearTimeout(errorTimeout);
-        return;
-      }
-      
-      console.log("Firebase is available, initializing auth check...");
-      
-      try {
-        firebase.auth().onAuthStateChanged(function(user) {
-          // Clear timeout since we got a response
-          clearTimeout(errorTimeout);
-          
-          console.log("Auth state changed:", user ? "User logged in" : "No user");
-          
-          if (user) {
-            // User is signed in
-            document.getElementById('status-message').textContent = 'User authenticated! Redirecting...';
-            console.log("User is signed in, user ID:", user.uid);
-            console.log("Redirecting to app...");
-            
-            // Short delay to show the authenticated message
-            setTimeout(function() {
-              window.location.href = 'pages/app/index.html';
-            }, 1000);
-          } else {
-            // No user is signed in
-            document.getElementById('status-message').textContent = 'Please log in to continue';
-            document.getElementById('login-btn').style.display = 'inline-block';
-            console.log("No user is signed in, redirecting to login page...");
-            
-            // Short delay to show the login message
-            setTimeout(function() {
-              window.location.href = 'pages/auth/login.html';
-            }, 1000);
-          }
-        }, function(error) {
-          // Handle errors in the auth state observer
-          console.error("Auth state observer error:", error);
-          document.getElementById('status-message').textContent = 'Authentication error';
-          document.getElementById('error-message').textContent = 'Error: ' + error.message;
+      // Set a timeout for auth check
+      const timeout = setTimeout(function() {
+        if (!authChecked) {
+          document.getElementById('status-message').textContent = 'Authentication timed out';
           document.getElementById('error-message').style.display = 'block';
           document.getElementById('login-btn').style.display = 'inline-block';
-        });
-      } catch (error) {
-        console.error("Error in auth check:", error);
-        document.getElementById('status-message').textContent = 'Authentication error';
-        document.getElementById('error-message').textContent = 'Error: ' + error.message;
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('login-btn').style.display = 'inline-block';
-      }
-    });
-  </script>
+        }
+      }, 10000);
+      
+      firebase.auth().onAuthStateChanged(function(user) {
+        // Mark auth as checked
+        authChecked = true;
+        clearTimeout(timeout);
+        
+        console.log("Auth state changed:", user ? "User logged in" : "No user");
+        
+        if (user) {
+          // User is signed in
+          document.getElementById('status-message').textContent = 'User authenticated! Redirecting...';
+          console.log("User is signed in, user ID:", user.uid);
+          console.log("Redirecting to app...");
+          
+          // Redirect to app page
+          setTimeout(function() {
+            window.location.href = 'pages/app/index.html';
+          }, 1000);
+        } else {
+          // No user is signed in
+          document.getElementById('status-message').textContent = 'Please log in to continue';
+          document.getElementById('login-btn').style.display = 'inline-block';
+          console.log("No user is signed in, redirecting to login page...");
+          
+          // Redirect to login page
+          setTimeout(function() {
+            window.location.href = 'pages/auth/login.html';
+          }, 1000);
+        }
+      });
+    } catch (error) {
+      console.error("Error in auth check:", error);
+      document.getElementById('status-message').textContent = 'Authentication error';
+      document.getElementById('error-message').textContent = 'Error: ' + error.message;
+      document.getElementById('error-message').style.display = 'block';
+      document.getElementById('login-btn').style.display = 'inline-block';
+    }
+  });
+</script>
 </body>
 <script src="scripts/app-navigation.js"></script>
 <script>

@@ -249,17 +249,23 @@
       ...doc.data()
     };
     
+    // Format date and time if needed
+    if (eventData.dateTime && typeof eventData.dateTime.toDate === 'function') {
+      eventData.formattedDate = formatEventDate(eventData.dateTime.toDate());
+      eventData.formattedTime = formatTime(eventData.dateTime.toDate());
+    }
+    
     // Populate UI with event data
     populateEventDetails(eventData);
     
     // Check if user has RSVP'd
     checkUserRSVP(eventId);
     
-    // Load RSVP modal (fixing the path)
+    // Load RSVP modal 
     loadComponent('modal-container', '../../components/modals/rsvp-modal.html');
     
     // Load Report Message Modal
-    loadComponent('modal-report-containter', '../../components/modals/report-message-modal.html');
+    loadComponent('modal-report-container', '../../components/modals/report-message-modal.html');
     
     // Load vibe checks for this event
     loadVibeChecks(eventId);
@@ -312,38 +318,75 @@ function initializeEventChat(eventId) {
   eventChat.initialize();
 }
     
-    function initializeEventChat(eventId) {
-        // Only initialize for authenticated users
-        if (!firebase.auth().currentUser) {
-        document.getElementById('event-chat-container').innerHTML = `
-            <div class="p-6 text-center">
-            <p class="text-gray-600 mb-3">Sign in to join the event chat</p>
-            <button class="btn-primary" onclick="window.location.href='../auth/login.html'">Sign In</button>
-            </div>
-        `;
-        return;
-    }
-
-    // Check if event is in the past
-    if (eventData.dateTime) {
-      const eventDate = eventData.dateTime.toDate ? eventData.dateTime.toDate() : new Date(eventData.dateTime);
-      const now = new Date();
-      
-      if (eventDate < now) {
-        // For past events, show archived message
-        document.getElementById('event-chat-container').innerHTML = `
-          <div class="p-6 text-center">
-            <p class="text-gray-600">This event has already taken place. The chat is now archived.</p>
-          </div>
-        `;
-        return;
-      }
-    }
-
-    // Initialize chat
-    eventChat = new EventChat('event-chat-container', eventId);
-    eventChat.initialize();
+    // Function to initialize event chat that should replace current implementation
+function initializeEventChat(eventId) {
+  // Get container element
+  const container = document.getElementById('event-chat-container');
+  if (!container) {
+    console.error('Event chat container not found');
+    return;
   }
+  
+  // Only initialize for authenticated users
+  if (!firebase.auth().currentUser) {
+    container.innerHTML = `
+      <div class="p-6 text-center">
+        <p class="text-gray-600 mb-3">Sign in to join the event chat</p>
+        <button class="btn-primary" onclick="window.location.href='../auth/login.html'">Sign In</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Check if event is in the past
+  if (eventData.dateTime) {
+    const eventDate = eventData.dateTime.toDate ? eventData.dateTime.toDate() : new Date(eventData.dateTime);
+    const now = new Date();
+    
+    if (eventDate < now) {
+      // For past events, show archived message
+      container.innerHTML = `
+        <div class="p-6 text-center">
+          <p class="text-gray-600">This event has already taken place. The chat is now archived.</p>
+        </div>
+      `;
+      return;
+    }
+  }
+
+  // Load EventChat module and initialize it
+  import('../../scripts/components/event-chat.js')
+    .then(module => {
+      const EventChat = module.default;
+      window.eventChat = new EventChat('event-chat-container', eventId);
+      window.eventChat.initialize()
+        .catch(error => {
+          console.error('Error initializing event chat:', error);
+          container.innerHTML = `
+            <div class="p-6 text-center">
+              <p class="text-red-600 mb-3">Error loading chat: ${error.message}</p>
+              <button class="btn-primary" onclick="location.reload()">Try Again</button>
+            </div>
+          `;
+        });
+    })
+    .catch(error => {
+      console.error('Error loading event chat module:', error);
+      container.innerHTML = `
+        <div class="p-6 text-center">
+          <p class="text-red-600 mb-3">Error loading chat module: ${error.message}</p>
+          <button class="btn-primary" onclick="location.reload()">Try Again</button>
+        </div>
+      `;
+    });
+}
+
+// Clean up resources when navigating away
+window.addEventListener('beforeunload', function() {
+  if (window.eventChat) {
+    window.eventChat.cleanup();
+  }
+});
 
   // Clean up resources when navigating away
   window.addEventListener('beforeunload', function() {

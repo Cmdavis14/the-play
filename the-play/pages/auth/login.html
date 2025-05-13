@@ -239,66 +239,103 @@
   
   <!-- Load the new modules -->
   <script type="module">
-    // Import necessary modules
-    import { setupFormValidation } from '../../scripts/auth/form-validation.js';
-    import authentication from '../../scripts/auth/authentication.js';
+  import { setupFormValidation } from '../../scripts/auth/form-validation.js';
+  import authentication from '../../scripts/auth/authentication.js';
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM content loaded, setting up form validation');
     
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM content loaded, setting up form validation');
-      
-      // Set up form validation
-      setupFormValidation();
-      
-      // Set up logout button
-      const logoutBtn = document.getElementById('logout-btn');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', async function() {
-          try {
-            const result = await authentication.logOut();
-            if (result.success) {
-              window.location.href = '../../pages/auth/login.html';
-            } else {
-              alert('Logout failed: ' + result.error);
-            }
-          } catch (error) {
-            console.error('Logout error:', error);
-            alert('An error occurred during logout');
-          }
-        });
-      }
-      
-      // Set up Google and Facebook buttons
-      const googleBtn = document.getElementById('google-signin-btn');
-      if (googleBtn) {
-        googleBtn.addEventListener('click', async function() {
-          try {
-            const result = await authentication.signInWithGoogle();
-            if (result.success) {
-              // Redirect happens in the form-validation.js
-            }
-          } catch (error) {
-            console.error('Google sign-in error:', error);
-          }
-        });
-      }
-      
-      const facebookBtn = document.getElementById('facebook-signin-btn');
-      if (facebookBtn) {
-        facebookBtn.addEventListener('click', async function() {
-          try {
-            const result = await authentication.signInWithFacebook();
-            if (result.success) {
-              // Redirect happens in the form-validation.js
-            }
-          } catch (error) {
-            console.error('Facebook sign-in error:', error);
-          }
-        });
-      }
-    });
+    // Set up form validation
+    setupFormValidation();
     
-  </script>
-  <script src="../../scripts/app-navigation.js"></script>
-
-</body>
-</html>
+    // Set up logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async function() {
+        try {
+          const result = await authentication.logOut();
+          if (result.success) {
+            window.location.href = '../../pages/auth/login.html';
+          } else {
+            alert('Logout failed: ' + result.error);
+          }
+        } catch (error) {
+          console.error('Logout error:', error);
+          alert('An error occurred during logout');
+        }
+      });
+    }
+    
+    // Set up Google and Facebook buttons
+    const googleBtn = document.getElementById('google-signin-btn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async function() {
+        try {
+          const result = await authentication.signInWithGoogle();
+          if (result.success) {
+            // Show success and redirect
+            showLoggedInUser(result.user);
+            setTimeout(() => {
+              window.location.href = '../app/index.html';
+            }, 1500);
+          } else {
+            // Show error
+            const errorElement = document.getElementById('login-error');
+            errorElement.textContent = result.error;
+            errorElement.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Google sign-in error:', error);
+        }
+      });
+    }
+    
+    const facebookBtn = document.getElementById('facebook-signin-btn');
+    if (facebookBtn) {
+      facebookBtn.addEventListener('click', async function() {
+        try {
+          const result = await authentication.signInWithFacebook();
+          if (result.success) {
+            // Show success and redirect
+            showLoggedInUser(result.user);
+            setTimeout(() => {
+              window.location.href = '../app/index.html';
+            }, 1500);
+          } else {
+            // Show error
+            const errorElement = document.getElementById('login-error');
+            errorElement.textContent = result.error;
+            errorElement.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Facebook sign-in error:', error);
+        }
+      });
+    }
+  });
+  
+  // Helper function to show logged in user UI
+  function showLoggedInUser(user) {
+    // Hide forms if they exist
+    const signupForm = document.getElementById('signup-form');
+    const loginForm = document.getElementById('login-form');
+    
+    if (signupForm) signupForm.classList.add('hidden');
+    if (loginForm) loginForm.classList.add('hidden');
+    
+    // Update user info elements
+    const userLoggedIn = document.getElementById('user-logged-in');
+    if (userLoggedIn) {
+      const userDisplayName = document.getElementById('user-display-name');
+      const userEmail = document.getElementById('user-email');
+      const userProfilePic = document.getElementById('user-profile-pic');
+      
+      if (userDisplayName) userDisplayName.textContent = user.displayName || 'User';
+      if (userEmail) userEmail.textContent = user.email;
+      if (userProfilePic && user.photoURL) userProfilePic.src = user.photoURL;
+      
+      // Show logged in section
+      userLoggedIn.classList.remove('hidden');
+    }
+  }
+</script>

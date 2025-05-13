@@ -1,4 +1,4 @@
-// Fixed file: scripts/components/profile.js
+// scripts/components/profile.js
 class UserProfile {
   constructor() {
     this.currentUser = null;
@@ -8,27 +8,34 @@ class UserProfile {
   }
   
   async initialize() {
-    if (this.isInitialized) return;
+    if (this.isInitialized) return this.userData;
     
-    // Wait for Firebase Auth to initialize
-    await new Promise(resolve => {
-      const unsubscribe = firebase.auth().onAuthStateChanged(user => {
-        this.currentUser = user;
-        unsubscribe();
-        resolve();
+    try {
+      // Wait for Firebase Auth to initialize
+      await new Promise(resolve => {
+        const unsubscribe = firebase.auth().onAuthStateChanged(user => {
+          this.currentUser = user;
+          unsubscribe();
+          resolve();
+        });
       });
-    });
 
-    // Get current user if available
-    this.currentUser = firebase.auth().currentUser;
+      // Get current user if available
+      this.currentUser = firebase.auth().currentUser;
 
-    if (this.currentUser) {
-      await this.loadUserData();
-      this.setupRealTimeUpdates();
+      if (this.currentUser) {
+        await this.loadUserData();
+        this.setupRealTimeUpdates();
+      } else {
+        console.log('No user logged in during profile initialization');
+      }
+      
+      this.isInitialized = true;
+      return this.userData;
+    } catch (error) {
+      console.error('Error initializing user profile:', error);
+      return null;
     }
-    
-    this.isInitialized = true;
-    return this.userData;
   }
 
   setupRealTimeUpdates() {
@@ -102,7 +109,7 @@ class UserProfile {
     }
     
     if (this.currentUser) {
-      return this.currentUser.displayName || this.currentUser.email.split('@')[0];
+      return this.currentUser.displayName || this.currentUser.email?.split('@')[0] || 'User';
     }
     
     return 'User';
@@ -152,25 +159,42 @@ class UserProfile {
       
       if (bookmarkIds.length === 0) return [];
       
-      // Get the actual events
-      const eventsSnapshot = await db.collection('events')
-        .where(firebase.firestore.FieldPath.documentId(), 'in', bookmarkIds)
-        .get();
-      
-      return eventsSnapshot.docs.map(doc => {
-        return {
+      // Get the actual events - handle Firestore limitation of 10 IDs per query
+      const events = [];
+      for (let i = 0; i < bookmarkIds.length; i += 10) {
+        const batch = bookmarkIds.slice(i, i + 10);
+        
+        const eventsSnapshot = await db.collection('events')
+          .where(firebase.firestore.FieldPath.documentId(), 'in', batch)
+          .get();
+        
+        events.push(...eventsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        };
-      });
+        })));
+      }
+      
+      return events;
     } catch (error) {
       console.error('Error getting bookmarked events:', error);
       return [];
     }
   }
+  
+  cleanup() {
+    // Remove any active listeners
+    this.profileListeners.forEach(unsubscribe => unsubscribe());
+    this.profileListeners = [];
+    this.isInitialized = false;
+  }
 }
 
 // Create a singleton instance
 const userProfile = new UserProfile();
+
+// Auto-cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  userProfile.cleanup();
+});
 
 export default userProfile;
