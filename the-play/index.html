@@ -3,29 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="The Play - Find your social vibe">
+  <link rel="icon" href="assets/images/favicon.ico">
   <title>The Play</title>
   
   <!-- Include Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   
   <!-- Load Firebase Configuration -->
   <script>
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyBOPjdRIDVst4uZg6oqNPLhlqgj0XwqPH8",
-      authDomain: "the-play-8f454.firebaseapp.com",
-      projectId: "the-play-8f454",
-      storageBucket: "the-play-8f454.firebasestorage.app",
-      messagingSenderId: "919736772232",
-      appId: "1:919736772232:web:5d52b627785e5569a7e13d",
-      measurementId: "G-KYB0MJ4VKS",
-      databaseURL: "https://the-play-8f454-default-rtdb.firebaseio.com"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    // Firebase configuration - This should be moved to a separate config file
+    document.addEventListener('DOMContentLoaded', function() {
+      const firebaseConfig = {
+        apiKey: "AIzaSyBOPjdRIDVst4uZg6oqNPLhlqgj0XwqPH8",
+        authDomain: "the-play-8f454.firebaseapp.com",
+        projectId: "the-play-8f454",
+        storageBucket: "the-play-8f454.appspot.com", <!-- Fixed typo in URL -->
+        messagingSenderId: "919736772232",
+        appId: "1:919736772232:web:5d52b627785e5569a7e13d",
+        measurementId: "G-KYB0MJ4VKS",
+        databaseURL: "https://the-play-8f454-default-rtdb.firebaseio.com"
+      };
+  
+      // Initialize Firebase
+      if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+      }
+    });
   </script>
   
   <!-- Styles -->
@@ -34,7 +40,7 @@
   <link rel="stylesheet" href="assets/styles/main.css">
   <link rel="stylesheet" href="assets/styles/variables.css">
   
-  <!-- Custom styling -->
+  <!-- Custom styling - Should be moved to a separate CSS file -->
   <style>
     :root {
       --primary: #6C63FF;
@@ -45,7 +51,7 @@
     }
     
     body {
-      font-family: 'Poppins', -apple-system, sans-serif;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       min-height: 100vh;
       display: flex;
@@ -66,7 +72,7 @@
     }
     
     .gradient-text {
-      background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+      background: linear-gradient(120deg, var(--primary), var(--secondary));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -106,7 +112,7 @@
     }
     
     .action-btn {
-      background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+      background: linear-gradient(120deg, var(--primary), var(--secondary));
       color: white;
       border: none;
       padding: 12px 24px;
@@ -115,6 +121,7 @@
       cursor: pointer;
       margin-top: 20px;
       display: none;
+      transition: opacity 0.3s, transform 0.3s, box-shadow 0.3s;
     }
     
     .action-btn:hover {
@@ -168,6 +175,7 @@
         }
       }, 10000);
       
+      // Listen for auth state changes
       firebase.auth().onAuthStateChanged(function(user) {
         // Mark auth as checked
         authChecked = true;
@@ -178,8 +186,6 @@
         if (user) {
           // User is signed in
           document.getElementById('status-message').textContent = 'User authenticated! Redirecting...';
-          console.log("User is signed in, user ID:", user.uid);
-          console.log("Redirecting to app...");
           
           // Redirect to app page
           setTimeout(function() {
@@ -189,12 +195,9 @@
           // No user is signed in
           document.getElementById('status-message').textContent = 'Please log in to continue';
           document.getElementById('login-btn').style.display = 'inline-block';
-          console.log("No user is signed in, redirecting to login page...");
           
-          // Redirect to login page
-          setTimeout(function() {
-            window.location.href = 'pages/auth/login.html';
-          }, 1000);
+          // Skip redirect for first-time visitors; let them click the login button
+          // This improves user experience by preventing immediate redirects
         }
       });
     } catch (error) {
@@ -205,14 +208,11 @@
       document.getElementById('login-btn').style.display = 'inline-block';
     }
   });
-</script>
-</body>
-<script src="scripts/app-navigation.js"></script>
-<script>
+  
   // Direct navigation button - guaranteed to work
   document.getElementById('login-btn').addEventListener('click', function() {
-    console.log("Login button clicked");
     window.location.href = 'pages/auth/login.html';
   });
 </script>
+</body>
 </html>
