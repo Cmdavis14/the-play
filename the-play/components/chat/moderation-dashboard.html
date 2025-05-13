@@ -1,0 +1,60 @@
+<div class="moderation-dashboard">
+  <div class="dashboard-header">
+    <h2>Message Moderation Dashboard</h2>
+  </div>
+
+  <div class="filter-controls">
+    <select id="status-filter">
+      <option value="all">All Reports</option>
+      <option value="pending" selected>Pending</option>
+      <option value="reviewed">Reviewed</option>
+      <option value="actioned">Actioned</option>
+      <option value="rejected">Rejected</option>
+    </select>
+  </div>
+
+  <div class="reports-list" id="reports-list">
+    <!-- Reports will be loaded here -->
+    <div class="empty-reports">No reports to display.</div>
+  </div>
+
+  <template id="report-item-template">
+    <div class="report-item" data-report-id="">
+      <div class="report-header">
+        <div class="report-info">
+          <span class="report-id"></span>
+          <span class="report-date"></span>
+          <span class="report-status"></span>
+        </div>
+        <div class="report-actions">
+          <button class="expand-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="report-details" style="display: none;">
+        <div class="reported-message"></div>
+        <div class="reporter-info">
+          <strong>Reported by:</strong> <span class="reporter-name"></span>
+        </div>
+        <div class="message-author-info">
+          <strong>Message from:</strong> <span class="message-author"></span>
+        </div>
+        <div class="report-reason">
+          <strong>Reason:</strong> <span class="reason-text"></span>
+        </div>
+        <div class="moderation-actions">
+          <button class="delete-message-button">Delete Message</button>
+          <button class="reject-report-button">Reject Report</button>
+          <button class="block-user-button">Block User</button>
+        </div>
+        <div class="moderator-notes">
+          <textarea placeholder="Add notes..."></textarea>
+          <button class="save-notes-button">Save Notes</button>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>

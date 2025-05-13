@@ -1,111 +1,60 @@
 {
   "rules": {
-    ".read": false,
-    ".write": false,
-    
     "messages": {
-      "$roomId": {
-        ".read": "auth !== null && root.child('roomMembers').child($roomId).child(auth.uid).exists()",
-        ".write": "auth !== null && root.child('roomMembers').child($roomId).child(auth.uid).exists()",
-        "$messageId": {
-          ".validate": "newData.hasChildren(['text', 'userId', 'timestamp'])",
-          "text": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
-          },
-          "userId": {
-            ".validate": "newData.isString() && newData.val() === auth.uid"
-          },
-          "timestamp": {
-            ".validate": "newData.isNumber() && newData.val() <= now"
-          },
-          "mediaUrl": {
-            ".validate": "!newData.exists() || newData.isString()"
-          },
-          "mediaType": {
-            ".validate": "!newData.exists() || newData.isString()"
-          }
-        }
-      }
-    },
-    
-    "roomMembers": {
-      "$roomId": {
-        ".read": "auth !== null",
-        ".write": "auth !== null && ((data.exists() && data.child(auth.uid).exists()) || (root.child('events').child($roomId).exists() && root.child('attendees').child($roomId).child(auth.uid).exists()))",
-        "$userId": {
-          ".validate": "newData.isBoolean() && $userId === auth.uid"
-        }
-      }
-    },
-    
-    "userRooms": {
-      "$userId": {
-        ".read": "auth !== null && auth.uid === $userId",
-        ".write": "auth !== null && auth.uid === $userId",
-        "$roomId": {
-          ".validate": "newData.isBoolean() && root.child('roomMembers').child($roomId).child($userId).exists()"
-        }
-      }
-    },
-    
-    "directMessages": {
-      "$chatId": {
-        ".read": "auth !== null && (auth.uid === $chatId.split('_')[0] || auth.uid === $chatId.split('_')[1])",
-        ".write": "auth !== null && (auth.uid === $chatId.split('_')[0] || auth.uid === $chatId.split('_')[1])",
-        "$messageId": {
-          ".validate": "newData.hasChildren(['text', 'userId', 'timestamp'])",
-          "text": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
-          },
-          "userId": {
-            ".validate": "newData.isString() && newData.val() === auth.uid"
-          },
-          "timestamp": {
-            ".validate": "newData.isNumber() && newData.val() <= now"
-          },
-          "mediaUrl": {
-            ".validate": "!newData.exists() || newData.isString()"
-          },
-          "mediaType": {
-            ".validate": "!newData.exists() || newData.isString()"
-          }
-        }
-      }
-    },
-    
-    "userConversations": {
-      "$userId": {
-        ".read": "auth !== null && auth.uid === $userId",
-        ".write": "auth !== null && auth.uid === $userId",
-        "$chatId": {
-          ".validate": "newData.hasChildren(['lastMessage', 'lastTimestamp', 'otherUserId'])",
-          "unreadCount": {
-            ".validate": "newData.isNumber() && newData.val() >= 0"
-          }
-        }
-      }
-    },
-    
-    "messageStatus": {
+      ".read": "auth != null",
+      ".write": "auth != null",
       "$messageId": {
-        ".read": "auth !== null && root.child('messages').child($messageId).child('userId').val() === auth.uid",
-        "$userId": {
-          ".write": "auth !== null && auth.uid === $userId",
-          "read": {
-            ".validate": "newData.isBoolean()"
+        ".validate": "newData.hasChildren(['text', 'userId', 'username', 'timestamp'])",
+        "text": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "userId": {
+          ".validate": "newData.isString() && newData.val() === auth.uid"
+        },
+        "username": {
+          ".validate": "newData.isString()"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        },
+        "eventId": {
+          ".validate": "newData.isString()"
+        },
+        "isRead": {
+          ".validate": "newData.isBoolean()"
+        },
+        "media": {
+          ".validate": "newData.isString() || newData.val() == null"
+        }
+      }
+    },
+    "chatRooms": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$roomId": {
+        ".validate": "newData.hasChildren(['name', 'eventId', 'createdAt'])"
+      }
+    },
+    "directMessages": {
+      "$userId": {
+        "$receiverId": {
+          ".read": "auth != null && (auth.uid === $userId || auth.uid === $receiverId)",
+          ".write": "auth != null && (auth.uid === $userId || auth.uid === $receiverId)",
+          "$messageId": {
+            ".validate": "newData.hasChildren(['text', 'senderId', 'senderName', 'timestamp'])"
           }
         }
       }
     },
-    
-    "typing": {
-      "$roomId": {
-        ".read": "auth !== null && root.child('roomMembers').child($roomId).child(auth.uid).exists()",
-        "$userId": {
-          ".write": "auth !== null && auth.uid === $userId",
-          ".validate": "newData.isBoolean() || newData.isNumber()"
-        }
+    "userStatus": {
+      "$userId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $userId"
       }
+    },
+    "reportedMessages": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".write": "auth != null"
     }
   }
 }

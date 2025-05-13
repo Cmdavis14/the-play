@@ -1,0 +1,37 @@
+<div class="dm-inbox">
+  <div class="dm-header">
+    <h3>Messages</h3>
+    <button id="new-message-button" class="new-message-button">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+  </div>
+
+  <div class="dm-search">
+    <input type="text" id="contact-search" placeholder="Search contacts...">
+  </div>
+
+  <div class="dm-contact-list" id="contact-list">
+    <!-- Contact list will be populated here -->
+    <div class="empty-contacts">No conversations yet. Start a new chat!</div>
+  </div>
+
+  <template id="contact-item-template">
+    <div class="contact-item" data-user-id="">
+      <div class="contact-avatar">
+        <div class="avatar-placeholder"></div>
+        <div class="online-indicator" style="display: none;"></div>
+      </div>
+      <div class="contact-details">
+        <div class="contact-name"></div>
+        <div class="contact-last-message"></div>
+      </div>
+      <div class="contact-meta">
+        <div class="contact-time"></div>
+        <div class="unread-badge" style="display: none;"></div>
+      </div>
+    </div>
+  </template>
+</div>

@@ -1,0 +1,48 @@
+<div class="chat-room" id="event-chat-room">
+  <div class="chat-header">
+    <h3 class="chat-title">Event Chat Room</h3>
+    <div class="online-users">
+      <span class="online-count">0</span>
+      <span>online</span>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="message-container">
+    <!-- Messages will be loaded here -->
+    <div class="empty-chat-message">No messages yet. Be the first to say hello!</div>
+  </div>
+
+  <div class="chat-composer">
+    <div class="composer-tools">
+      <button class="emoji-button" id="emoji-picker-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+          <line x1="9" y1="9" x2="9.01" y2="9"></line>
+          <line x1="15" y1="9" x2="15.01" y2="9"></line>
+        </svg>
+      </button>
+      <label for="media-upload" class="media-upload-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+          <circle cx="12" cy="13" r="3"></circle>
+        </svg>
+      </label>
+      <input type="file" id="media-upload" accept="image/*" style="display: none">
+    </div>
+    
+    <div class="message-input-container">
+      <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
+      <button id="send-message-button" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="emoji-picker-container" id="emoji-picker-container" style="display: none;">
+    <!-- Emoji picker will be loaded here -->
+  </div>
+</div>
