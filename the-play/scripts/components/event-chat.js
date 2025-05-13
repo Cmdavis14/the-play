@@ -509,7 +509,7 @@ class EventChat {
 
   reportMessage(messageId) {
     // Import and load the report modal
-    import('../../scripts/utils/component-loader.js').then(module => {
+    import('../utils/componentloader.js').then(module => {
       const { loadComponent } = module;
       
       // Load the report modal component if not already loaded

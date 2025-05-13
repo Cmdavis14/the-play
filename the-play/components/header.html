@@ -122,12 +122,117 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    console.log("Header component loaded");
+    
+    // Direct link navigation that doesn't rely on AppNavigation
+    function setupNavLinks() {
+      // Home links
+      const homeLinks = document.querySelectorAll('#home-link, #home-nav-link');
+      homeLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log("Home link clicked");
+          const path = window.location.pathname;
+          let targetUrl;
+          
+          if (path.includes('/pages/app/')) {
+            targetUrl = 'index.html';
+          } else if (path.includes('/pages/auth/')) {
+            targetUrl = '../app/index.html';
+          } else {
+            targetUrl = 'pages/app/index.html';
+          }
+          
+          console.log("Navigating to home:", targetUrl);
+          window.location.href = targetUrl;
+        });
+      });
+      
+      // Map links
+      const mapLinks = document.querySelectorAll('#map-link, #mobile-map-link');
+      mapLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log("Map link clicked");
+          const path = window.location.pathname;
+          let targetUrl;
+          
+          if (path.includes('/pages/app/')) {
+            targetUrl = 'map.html';
+          } else if (path.includes('/pages/auth/')) {
+            targetUrl = '../app/map.html';
+          } else {
+            targetUrl = 'pages/app/map.html';
+          }
+          
+          console.log("Navigating to map:", targetUrl);
+          window.location.href = targetUrl;
+        });
+      });
+      
+      // Add similar direct navigation for all other links
+      // Discover links
+      setupLink('#discover-link, #mobile-discover-link', 'search.html');
+      
+      // Popular links
+      setupLink('#popular-link, #mobile-popular-link', 'index.html?tab=popular');
+      
+      // Messages links
+      setupLink('#messages-link, #mobile-messages-link', 'messages.html');
+      
+      // Create Event links
+      setupLink('#create-event-btn, #mobile-create-event-link', 'create-event.html');
+      
+      // Profile pic container
+      document.getElementById('header-profile-pic-container').addEventListener('click', function() {
+        console.log("Profile pic clicked");
+        const path = window.location.pathname;
+        let targetUrl;
+        
+        if (path.includes('/pages/app/')) {
+          targetUrl = 'profile.html';
+        } else if (path.includes('/pages/auth/')) {
+          targetUrl = '../app/profile.html';
+        } else {
+          targetUrl = 'pages/app/profile.html';
+        }
+        
+        console.log("Navigating to profile:", targetUrl);
+        window.location.href = targetUrl;
+      });
+    }
+    
+    function setupLink(selector, targetPage) {
+      const links = document.querySelectorAll(selector);
+      links.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log(`${selector} clicked`);
+          
+          const path = window.location.pathname;
+          let targetUrl;
+          
+          if (path.includes('/pages/app/')) {
+            targetUrl = targetPage;
+          } else if (path.includes('/pages/auth/')) {
+            targetUrl = '../app/' + targetPage;
+          } else {
+            targetUrl = 'pages/app/' + targetPage;
+          }
+          
+          console.log(`Navigating to ${targetPage}:`, targetUrl);
+          window.location.href = targetUrl;
+        });
+      });
+    }
+    
     // Mobile Menu Toggle
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
     const mobileMenu = document.getElementById('mobile-menu');
     
     if (mobileMenuToggle && mobileMenu) {
       mobileMenuToggle.addEventListener('click', function() {
+        console.log("Mobile menu toggle clicked");
         mobileMenu.classList.toggle('hidden');
       });
     }
@@ -140,8 +245,9 @@
     if (mobileSearchTrigger && mobileSearchOverlay) {
       // Open mobile search overlay
       mobileSearchTrigger.addEventListener('click', function() {
+        console.log("Mobile search trigger clicked");
         mobileSearchOverlay.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Prevent scrolling while overlay is open
+        document.body.style.overflow = 'hidden';
         
         // Focus on search input
         setTimeout(() => {
@@ -155,109 +261,34 @@
       // Close mobile search overlay
       if (closeMobileSearch) {
         closeMobileSearch.addEventListener('click', function() {
+          console.log("Close mobile search clicked");
           mobileSearchOverlay.classList.add('hidden');
-          document.body.style.overflow = 'auto'; // Restore scrolling
+          document.body.style.overflow = 'auto';
         });
       }
       
       // Close when clicking outside the search box
       mobileSearchOverlay.addEventListener('click', function(e) {
         if (e.target === mobileSearchOverlay) {
+          console.log("Clicked outside mobile search");
           mobileSearchOverlay.classList.add('hidden');
-          document.body.style.overflow = 'auto'; // Restore scrolling
+          document.body.style.overflow = 'auto';
         }
       });
     }
     
-    // Setup Navigation Links
-    
-    // Desktop navigation
-    document.getElementById('home-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('index.html');
-    });
-    
-    document.getElementById('home-nav-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('index.html');
-    });
-    
-    document.getElementById('discover-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('search.html');
-    });
-    
-    document.getElementById('map-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('map.html');
-    });
-    
-    document.getElementById('popular-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('index.html?tab=popular');
-    });
-    
-    document.getElementById('messages-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('messages.html');
-    });
-    
-    document.getElementById('create-event-btn').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('create-event.html');
-    });
-    
-    // Mobile navigation
-    document.getElementById('mobile-home-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('index.html');
-    });
-    
-    document.getElementById('mobile-discover-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('search.html');
-    });
-    
-    document.getElementById('mobile-map-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('map.html');
-    });
-    
-    document.getElementById('mobile-popular-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('index.html?tab=popular');
-    });
-    
-    document.getElementById('mobile-messages-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('messages.html');
-    });
-    
-    document.getElementById('mobile-create-event-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      navigateTo('create-event.html');
-    });
+    // Setup all navigation links
+    setupNavLinks();
     
     // Logout buttons
     document.getElementById('logout-button').addEventListener('click', function() {
-      if (window.AppNavigation) {
-        window.AppNavigation.logoutUser();
-      } else {
-        handleLogout();
-      }
+      console.log("Logout button clicked");
+      handleLogout();
     });
     
     document.getElementById('mobile-logout-button').addEventListener('click', function() {
-      if (window.AppNavigation) {
-        window.AppNavigation.logoutUser();
-      } else {
-        handleLogout();
-      }
-    });
-    
-    // Profile picture click handler
-    document.getElementById('header-profile-pic-container').addEventListener('click', function() {
-      navigateTo('profile.html');
+      console.log("Mobile logout button clicked");
+      handleLogout();
     });
     
     // Search form handling
@@ -267,7 +298,20 @@
       const query = searchInput.value.trim();
       
       if (query) {
-        navigateTo(`search.html?q=${encodeURIComponent(query)}`);
+        console.log("Search submitted:", query);
+        const path = window.location.pathname;
+        let targetUrl;
+        
+        if (path.includes('/pages/app/')) {
+          targetUrl = `search.html?q=${encodeURIComponent(query)}`;
+        } else if (path.includes('/pages/auth/')) {
+          targetUrl = `../app/search.html?q=${encodeURIComponent(query)}`;
+        } else {
+          targetUrl = `pages/app/search.html?q=${encodeURIComponent(query)}`;
+        }
+        
+        console.log("Navigating to search:", targetUrl);
+        window.location.href = targetUrl;
       } else {
         searchInput.focus();
       }
@@ -280,7 +324,20 @@
       const query = searchInput.value.trim();
       
       if (query) {
-        navigateTo(`search.html?q=${encodeURIComponent(query)}`);
+        console.log("Mobile search submitted:", query);
+        const path = window.location.pathname;
+        let targetUrl;
+        
+        if (path.includes('/pages/app/')) {
+          targetUrl = `search.html?q=${encodeURIComponent(query)}`;
+        } else if (path.includes('/pages/auth/')) {
+          targetUrl = `../app/search.html?q=${encodeURIComponent(query)}`;
+        } else {
+          targetUrl = `pages/app/search.html?q=${encodeURIComponent(query)}`;
+        }
+        
+        console.log("Navigating to search:", targetUrl);
+        window.location.href = targetUrl;
         // Close mobile search overlay
         mobileSearchOverlay.classList.add('hidden');
         document.body.style.overflow = 'auto';
@@ -289,33 +346,9 @@
       }
     });
     
-    // Navigation helper function (fallback if app-navigation.js is not loaded)
-    function navigateTo(page) {
-      if (window.AppNavigation) {
-        window.AppNavigation.navigateTo(page);
-      } else {
-        console.log("AppNavigation not loaded, using fallback navigation");
-        
-        // Determine base path
-        let basePath = '';
-        const path = window.location.pathname;
-        
-        if (path.includes('/pages/app/')) {
-          basePath = '';
-        } else if (path.includes('/pages/auth/')) {
-          basePath = '../app/';
-        } else {
-          basePath = 'pages/app/';
-        }
-        
-        // Navigate to the page
-        window.location.href = basePath + page;
-      }
-    }
-    
     // Fallback logout handler
     function handleLogout() {
-      console.log("Logout button clicked - using fallback logout");
+      console.log("Handling logout");
       
       if (typeof firebase !== 'undefined' && firebase.auth) {
         console.log("Using Firebase for logout");
@@ -325,8 +358,8 @@
             console.log("Logged out successfully");
             
             // Determine login page path
-            let loginPath = '';
             const path = window.location.pathname;
+            let loginPath;
             
             if (path.includes('/pages/app/')) {
               loginPath = '../auth/login.html';
@@ -352,9 +385,11 @@
   
   // Set user profile picture if available
   document.addEventListener('DOMContentLoaded', function() {
+    console.log("Checking for user profile picture");
     if (typeof firebase !== 'undefined' && firebase.auth) {
       const currentUser = firebase.auth().currentUser;
       if (currentUser && currentUser.photoURL) {
+        console.log("Setting user profile picture");
         const profilePic = document.getElementById('header-profile-pic');
         if (profilePic) {
           profilePic.src = currentUser.photoURL;

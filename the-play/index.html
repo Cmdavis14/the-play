@@ -219,4 +219,12 @@
     });
   </script>
 </body>
+<script src="scripts/app-navigation.js"></script>
+<script>
+  // Direct navigation button - guaranteed to work
+  document.getElementById('login-btn').addEventListener('click', function() {
+    console.log("Login button clicked");
+    window.location.href = 'pages/auth/login.html';
+  });
+</script>
 </html>

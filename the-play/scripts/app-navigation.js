@@ -1,52 +1,56 @@
-// Component loader script that needs to be added to all pages
-// This ensures navigation works properly no matter where you are in the app
-// Create file: scripts/app-navigation.js
+// Replace the entire contents of scripts/app-navigation.js with this:
 
-/**
- * Helper functions for navigating within the application
- */
 (function(window) {
-  // Function to determine current location within the app
-  function getCurrentLocation() {
+  // Function to navigate to a specific page
+  function navigateTo(page) {
+    console.log("Navigating to:", page);
+    
+    // Handle absolute URLs
+    if (page.startsWith('http://') || page.startsWith('https://')) {
+      window.location.href = page;
+      return;
+    }
+    
+    // Get the current location
     const path = window.location.pathname;
     console.log("Current path:", path);
     
+    // Determine the base URL
+    let basePath = '';
+    
     if (path.includes('/pages/app/')) {
-      return 'app';
+      // In app directory
+      basePath = '../../';  // Go back to root
     } else if (path.includes('/pages/auth/')) {
-      return 'auth';
+      // In auth directory
+      basePath = '../../';  // Go back to root
     } else {
-      return 'root';
-    }
-  }
-  
-  // Function to navigate to a specific page
-  function navigateTo(page) {
-    const currentLocation = getCurrentLocation();
-    let targetPath;
-    
-    console.log("Navigating to:", page, "from", currentLocation);
-    
-    switch(currentLocation) {
-      case 'app':
-        // Already in app directory, just go to the page
-        targetPath = page;
-        break;
-      case 'auth':
-        // In auth directory, navigate to app
-        targetPath = '../app/' + page;
-        break;
-      case 'root':
-        // In root directory, navigate to app
-        targetPath = 'pages/app/' + page;
-        break;
-      default:
-        // Fallback
-        targetPath = 'pages/app/' + page;
+      // Likely at root or unknown location
+      basePath = './';
     }
     
-    console.log("Target path:", targetPath);
-    window.location.href = targetPath;
+    // Build the target URL
+    let targetUrl;
+    
+    // If the page starts with "pages/", it's a full path from root
+    if (page.startsWith('pages/')) {
+      targetUrl = basePath + page;
+    } 
+    // If we're in app directory and the target doesn't specify directory
+    else if (path.includes('/pages/app/') && !page.includes('/')) {
+      targetUrl = page;  // Stay in same directory
+    }
+    // If we're in auth directory and target is for app
+    else if (path.includes('/pages/auth/')) {
+      targetUrl = '../app/' + page;
+    }
+    // Default case - assume going to app directory
+    else {
+      targetUrl = basePath + 'pages/app/' + page;
+    }
+    
+    console.log("Full target URL:", targetUrl);
+    window.location.href = targetUrl;
   }
   
   // Function to logout user
@@ -58,22 +62,16 @@
         .then(() => {
           console.log("Successfully logged out!");
           
-          // Navigate to login page
-          const currentLocation = getCurrentLocation();
+          // Navigate to login page based on current location
+          const path = window.location.pathname;
           let loginPath;
           
-          switch(currentLocation) {
-            case 'app':
-              loginPath = '../auth/login.html';
-              break;
-            case 'auth':
-              loginPath = 'login.html';
-              break;
-            case 'root':
-              loginPath = 'pages/auth/login.html';
-              break;
-            default:
-              loginPath = 'pages/auth/login.html';
+          if (path.includes('/pages/app/')) {
+            loginPath = '../auth/login.html';
+          } else if (path.includes('/pages/auth/')) {
+            loginPath = 'login.html';
+          } else {
+            loginPath = './pages/auth/login.html';
           }
           
           console.log("Redirecting to:", loginPath);
@@ -89,9 +87,11 @@
     }
   }
   
-  // Make functions available globally
+  // Make functions available globally with clear console message
   window.AppNavigation = {
     navigateTo: navigateTo,
     logoutUser: logoutUser
   };
+  
+  console.log("📌 App Navigation initialized!");
 })(window);

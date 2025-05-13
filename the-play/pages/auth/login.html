@@ -174,64 +174,68 @@
     </div>
   </div>
 
-  <script>
-    // Tab switching functionality
-    function switchTab(tab) {
-      // Update tab styling
-      if (tab === 'signup') {
-        document.getElementById('signup-tab').classList.add('tab-active');
-        document.getElementById('signup-tab').classList.remove('text-gray-500');
-        document.getElementById('login-tab').classList.remove('tab-active');
-        document.getElementById('login-tab').classList.add('text-gray-500');
-        document.getElementById('signup-form').classList.remove('hidden');
-        document.getElementById('login-form').classList.add('hidden');
-      } else {
-        document.getElementById('login-tab').classList.add('tab-active');
-        document.getElementById('login-tab').classList.remove('text-gray-500');
-        document.getElementById('signup-tab').classList.remove('tab-active');
-        document.getElementById('signup-tab').classList.add('text-gray-500');
-        document.getElementById('login-form').classList.remove('hidden');
-        document.getElementById('signup-form').classList.add('hidden');
-      }
-      
-      // Hide user logged in section if visible
-      document.getElementById('user-logged-in').classList.add('hidden');
-      
-      // Clear any error messages
-      document.getElementById('signup-error').style.display = 'none';
-      document.getElementById('login-error').style.display = 'none';
-      document.getElementById('signup-success').style.display = 'none';
+<script>
+  // Tab switching functionality
+  function switchTab(tab) {
+    console.log("Switching to tab:", tab);
+    // Update tab styling
+    if (tab === 'signup') {
+      document.getElementById('signup-tab').classList.add('tab-active');
+      document.getElementById('signup-tab').classList.remove('text-gray-500');
+      document.getElementById('login-tab').classList.remove('tab-active');
+      document.getElementById('login-tab').classList.add('text-gray-500');
+      document.getElementById('signup-form').classList.remove('hidden');
+      document.getElementById('login-form').classList.add('hidden');
+    } else {
+      document.getElementById('login-tab').classList.add('tab-active');
+      document.getElementById('login-tab').classList.remove('text-gray-500');
+      document.getElementById('signup-tab').classList.remove('tab-active');
+      document.getElementById('signup-tab').classList.add('text-gray-500');
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('signup-form').classList.add('hidden');
     }
-
-    // Intro animation
-    document.addEventListener('DOMContentLoaded', function() {
-      // Wait for animation to complete
-      setTimeout(function() {
-        // Fade out the intro overlay
-        const introOverlay = document.getElementById('intro-overlay');
-        introOverlay.style.opacity = '0';
-        
-        // Show the main content
-        const mainContent = document.getElementById('main-content');
-        mainContent.classList.add('visible');
-        
-        // Remove the overlay after it fades out
-        setTimeout(function() {
-          introOverlay.style.display = 'none';
-        }, 500);
-      }, 2500); // This should match the duration of the animation
-      
-      // Check if user is already logged in
-      firebase.auth().onAuthStateChanged(function(user) {
-        if (user) {
-          console.log('User is already logged in, redirecting to app...');
-          // Redirect to app page
-          window.location.href = '../../pages/app/index.html?uid=' + user.uid;
-        }
-      });
-    });
     
-  </script>
+    // Hide user logged in section if visible
+    document.getElementById('user-logged-in').classList.add('hidden');
+    
+    // Clear any error messages
+    document.getElementById('signup-error').style.display = 'none';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('signup-success').style.display = 'none';
+  }
+
+  // Intro animation
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log("Login page DOM content loaded");
+    // Wait for animation to complete
+    setTimeout(function() {
+      // Fade out the intro overlay
+      const introOverlay = document.getElementById('intro-overlay');
+      introOverlay.style.opacity = '0';
+      
+      // Show the main content
+      const mainContent = document.getElementById('main-content');
+      mainContent.classList.add('visible');
+      
+      // Remove the overlay after it fades out
+      setTimeout(function() {
+        introOverlay.style.display = 'none';
+      }, 500);
+    }, 2500); // This should match the duration of the animation
+    
+    // Check if user is already logged in
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+        console.log('User is already logged in, redirecting to app...');
+        // Redirect to app page - direct path without AppNavigation
+        window.location.href = '../app/index.html?uid=' + user.uid;
+      }
+    });
+  });
+</script>
+
+<!-- Add a direct script import for app-navigation -->
+<script src="../../scripts/app-navigation.js"></script>
   
   <!-- Load the new modules -->
   <script type="module">
