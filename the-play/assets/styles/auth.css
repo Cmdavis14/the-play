@@ -1,0 +1,132 @@
+   :root {
+      --primary: #6C63FF;
+      --secondary: #FF6B6B;
+      --dark: #2A2A2A;
+      --light: #F5F5F5;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+    }
+    
+    .gradient-text {
+      background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+      color: white;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+    }
+    
+    .auth-card {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+    }
+    
+    .tab-active {
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+    }
+    
+    .error-message {
+      color: #EF4444;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    
+    .success-message {
+      color: #10B981;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    
+    .logo-pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    /* Intro animation styles */
+    .intro-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 1;
+      transition: opacity 0.5s ease-out;
+    }
+
+    .intro-logo {
+      font-size: 120px;
+      font-weight: bold;
+      color: white;
+      transform: scale(3);
+      opacity: 0;
+      animation: introAnimation 2.5s ease-out forwards;
+    }
+
+    @keyframes introAnimation {
+      0% {
+        transform: scale(3);
+        opacity: 0;
+      }
+      20% {
+        opacity: 1;
+      }
+      70% {
+        transform: scale(3);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .main-content {
+      opacity: 0;
+      transition: opacity 1s ease-in;
+    }
+
+    .main-content.visible {
+      opacity: 1;
+    }

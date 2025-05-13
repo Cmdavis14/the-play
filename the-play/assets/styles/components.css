@@ -1,0 +1,64 @@
+/* Create file: assets/styles/components.css */
+/* Event Card Styles */
+.event-card {
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+}
+
+.vibe-score {
+  background: linear-gradient(120deg, #FF6B6B, #FFC107);
+  color: white;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-weight: bold;
+}
+
+.verified-badge {
+  color: #3897f0;
+  font-size: 1rem;
+  margin-left: 5px;
+}
+
+/* Story Circle Styles */
+.story-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--primary);
+}
+
+/* Map Pin Styles */
+.map-pin {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation Icons */
+.nav-icon {
+  font-size: 1.5rem;
+  color: #888;
+}
+
+.nav-icon.active {
+  color: var(--primary);
+}
+
+/* Feature Icon Styles */
+.feature-icon {
+  background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

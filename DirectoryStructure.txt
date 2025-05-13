@@ -1,0 +1,100 @@
+the-play/
+│
+├── assets/
+│   ├── images/
+│   │   ├── logo.svg
+│   │   ├── favicon.ico
+│   │   ├── icons/
+│   │   └── placeholders/
+│   │
+│   └── styles/
+│       ├── main.css
+│       ├── variables.css
+│       ├── layout.css
+│       ├── components.css
+│       └── animations.css
+│
+├── components/
+│   ├── header.html
+│   ├── footer.html
+│   ├── events/
+│   │   ├── event-card.html
+│   │   ├── event-form.html
+│   │   └── event-filters.html
+│   │
+│   └── modals/
+│       ├── login-modal.html
+│       ├── signup-modal.html
+│       ├── edit-profile-modal.html
+│       ├── create-event-modal.html
+│       ├── rsvp-modal.html
+│       ├── vibe-check-modal.html
+│       └── notification-settings-modal.html
+│
+├── docs/
+│   ├── api-reference.md
+│   └── components-reference.md
+│
+├── pages/
+│   ├── index.html
+│   ├── landing.html
+│   │
+│   ├── auth/
+│   │   ├── login.html
+│   │   ├── signup.html
+│   │   ├── forgot-password.html
+│   │   └── reset-password.html
+│   │
+│   └── app/
+│       ├── index.html
+│       ├── event-detail.html
+│       ├── create-event.html
+│       ├── profile.html
+│       ├── map.html
+│       └── search.html
+│
+├── scripts/
+│   ├── app.js
+│   ├── main.js
+│   │
+│   ├── auth/
+│   │   ├── authentication.js
+│   │   └── user-session.js
+│   │
+│   ├── components/
+│   │   ├── events.js
+│   │   ├── event-creation.js
+│   │   ├── modals.js
+│   │   ├── profile.js
+│   │   ├── recommended-events.js
+│   │   └── nearby-events.js
+│   │
+│   ├── firebase/
+│   │   └── config.js
+│   │
+│   ├── services/
+│   │   ├── event-service.js
+│   │   ├── attendance-service.js
+│   │   ├── location-service.js
+│   │   ├── notification-service.js
+│   │   ├── recommendation-service.js
+│   │   └── reminder-service.js
+│   │
+│   └── utils/
+│       ├── component-loader.js
+│       ├── date-format.js
+│       ├── error-handler.js
+│       └── form-validator.js
+│
+├── public/
+│   ├── favicon.ico
+│   ├── manifest.json
+│   ├── robots.txt
+│   └── firebase-messaging-sw.js
+│
+├── .gitignore
+├── firebase.json
+├── firestore.rules
+├── storage.rules
+├── package.json
+└── README.md

@@ -1,0 +1,139 @@
+<!-- Create file: components/modals/edit-profile-modal.html -->
+<div class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" id="editProfileModal">
+  <div class="bg-white rounded-xl w-11/12 max-w-md p-6" onclick="event.stopPropagation();">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">Edit Profile</h3>
+      <button class="text-gray-500 hover:text-gray-700 close-modal-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <form id="edit-profile-form">
+      <div class="mb-4">
+        <label for="display-name" class="block text-gray-700 text-sm font-medium mb-2">Display Name</label>
+        <input type="text" id="display-name" class="w-full p-3 border border-gray-300 rounded-lg">
+      </div>
+      
+      <div class="mb-4">
+        <label for="bio" class="block text-gray-700 text-sm font-medium mb-2">Bio</label>
+        <textarea id="bio" class="w-full p-3 border border-gray-300 rounded-lg h-24"></textarea>
+      </div>
+      
+      <div class="mb-4">
+        <label for="location" class="block text-gray-700 text-sm font-medium mb-2">Location</label>
+        <input type="text" id="location" class="w-full p-3 border border-gray-300 rounded-lg">
+      </div>
+      
+      <div class="mb-4">
+        <label for="instagram" class="block text-gray-700 text-sm font-medium mb-2">Instagram Username</label>
+        <div class="flex items-center">
+          <span class="text-gray-500 mr-2">@</span>
+          <input type="text" id="instagram" class="flex-1 p-3 border border-gray-300 rounded-lg">
+        </div>
+      </div>
+      
+      <div class="flex justify-end">
+        <button type="button" class="mr-4 px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 close-modal-btn">Cancel</button>
+        <button type="submit" class="btn-primary px-6 py-3">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Close modal functionality
+  document.querySelectorAll('#editProfileModal .close-modal-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const modal = document.getElementById('editProfileModal');
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    });
+  });
+  
+  // Close when clicking outside
+  document.getElementById('editProfileModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+  });
+  
+  // Initialize form with user data
+  document.addEventListener('DOMContentLoaded', function() {
+    import('../../scripts/components/profile.js')
+      .then(module => {
+        const userProfile = module.default;
+        
+        // Load user profile data
+        userProfile.initialize().then(() => {
+          if (userProfile.userData) {
+            document.getElementById('display-name').value = userProfile.userData.displayName || '';
+            document.getElementById('bio').value = userProfile.userData.bio || '';
+            document.getElementById('location').value = userProfile.userData.location || '';
+            document.getElementById('instagram').value = userProfile.userData.instagram || '';
+          }
+        });
+      });
+    
+    // Form submission
+    document.getElementById('edit-profile-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const module = await import('../../scripts/components/profile.js');
+      const userProfile = module.default;
+      const errorHandler = (await import('../../scripts/utils/error-handler.js')).default;
+      
+      try {
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+        
+        // Get form values
+        const displayName = document.getElementById('display-name').value.trim();
+        const bio = document.getElementById('bio').value.trim();
+        const location = document.getElementById('location').value.trim();
+        const instagram = document.getElementById('instagram').value.trim();
+        
+        // Validate display name
+        if (!displayName) {
+          errorHandler.showToast('Display name is required', 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Save Changes';
+          return;
+        }
+        
+        // Update profile
+        await userProfile.updateProfile({
+          displayName,
+          bio,
+          location,
+          instagram
+        });
+        
+        // Update display name in Firebase Auth
+        await firebase.auth().currentUser.updateProfile({
+          displayName: displayName
+        });
+        
+        // Update UI
+        document.getElementById('user-display-name').textContent = displayName;
+        
+        // Close modal
+        document.getElementById('editProfileModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        
+        // Show success message
+        errorHandler.showToast('Profile updated successfully', 'success');
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        errorHandler.showToast('Failed to update profile', 'error');
+      } finally {
+        // Reset button
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Save Changes';
+      }
+    });
+  });
+</script>

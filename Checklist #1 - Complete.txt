@@ -1,0 +1,65 @@
+The Play - Checklist 1 (Completed)
+
+This checklist covers the initial project restructuring phase, which
+has been completed.
+
+Project Structure and File Organization
+
+✅ Create the folder structure
+
+Created main directory the-play/
+Created subdirectories for assets, scripts, pages, and components
+
+✅ Create scripts/firebase/config.js with Firebase configuration
+
+Extracted Firebase config to a separate file
+Set up Firebase initialization in this file
+
+✅ Update auth.js to use the imported config
+
+Removed duplicate Firebase initialization
+Made auth.js rely on config.js for Firebase resources
+
+✅ Move HTML files to their new locations
+
+Moved loginscreenwithfbsdk.html to pages/auth/login.html
+Moved themainpageupdated.html to pages/app/index.html
+
+✅ Extract CSS to separate style files
+
+Created assets/styles/auth.css for login page styles
+Created assets/styles/main.css for main app styles
+
+✅ Update all file references in HTML files
+
+Updated all script and stylesheet paths
+Ensured relative paths were correct
+
+✅ Create the root index.html (the one that redirects to login or app)
+
+Created entry point that checks auth state
+Added automatic redirection based on auth state
+
+Bug Fixes and Refinements
+
+✅ Fix CSS formatting issues
+
+Removed unnecessary style tags from CSS files
+Fixed CSS formatting to ensure styles apply correctly
+
+✅ Update redirects in auth.js
+
+Updated all page references to match new file locations
+Fixed redirect paths for login, signup, and logout
+
+✅ Fix debug functions in app/index.html
+
+Updated debug tool references to match new file structure
+Ensured debug functions work with the new project organization
+
+✅ Test functionality
+
+Verified login functionality
+Confirmed logout works correctly
+Tested redirects between pages
+Ensured animations and styling remain intact

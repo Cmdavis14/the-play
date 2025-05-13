@@ -1,0 +1,307 @@
+<!-- Create file: components/modals/notification-settings-modal.html -->
+<div class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" id="notificationSettingsModal">
+  <div class="bg-white rounded-xl w-11/12 max-w-md p-6" onclick="event.stopPropagation();">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">Notification Settings</h3>
+      <button class="text-gray-500 hover:text-gray-700 close-modal-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div id="notifications-not-supported" class="hidden">
+      <p class="text-gray-700 mb-4">Push notifications are not supported in your browser.</p>
+      <p class="text-gray-600 text-sm mb-4">Please use a modern browser like Chrome, Firefox, or Safari to receive notifications about upcoming events.</p>
+    </div>
+    
+    <div id="notifications-permission" class="hidden">
+      <p class="text-gray-700 mb-4">The Play would like to send you notifications about your events and important updates.</p>
+      
+      <div class="bg-gray-100 p-4 rounded-lg mb-6">
+        <div class="flex items-center mb-2">
+          <i class="fas fa-bell text-purple-600 mr-3"></i>
+          <p class="text-gray-800">Get notified about:</p>
+        </div>
+        <ul class="pl-9 text-gray-700 text-sm space-y-2">
+          <li>• Event reminders</li>
+          <li>• Vibe check updates</li>
+          <li>• New events that match your interests</li>
+        </ul>
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="enable-notifications" class="btn-primary px-6 py-3">Enable Notifications</button>
+      </div>
+    </div>
+    
+    <div id="notifications-settings" class="hidden">
+      <p class="text-gray-700 mb-4">Manage your notification preferences below.</p>
+      
+      <div class="space-y-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Enable All Notifications</p>
+            <p class="text-sm text-gray-600">Turn all notifications on or off</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="notifications-enabled">
+            <span class="slider round"></span>
+          </label>
+        </div>
+        
+        <div class="border-t border-gray-200 pt-4">
+          <p class="font-medium mb-3">Notification Types</p>
+          
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <p class="text-gray-700">Event Reminders</p>
+              <label class="switch">
+                <input type="checkbox" id="event-reminders">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <p class="text-gray-700">Vibe Check Updates</p>
+              <label class="switch">
+                <input type="checkbox" id="vibe-updates">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <p class="text-gray-700">New Event Recommendations</p>
+              <label class="switch">
+                <input type="checkbox" id="new-events">
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="save-notification-settings" class="btn-primary px-6 py-3">Save Settings</button>
+      </div>
+    </div>
+    
+    <div id="notifications-blocked" class="hidden">
+      <p class="text-gray-700 mb-4">Notifications are currently blocked for this site.</p>
+      <p class="text-gray-600 text-sm mb-6">To enable notifications, please update your browser settings to allow notifications from The Play.</p>
+      
+      <div class="bg-gray-100 p-4 rounded-lg mb-6">
+        <h4 class="font-medium mb-2">How to enable notifications:</h4>
+        <ol class="pl-5 text-gray-700 text-sm space-y-2">
+          <li>1. Click the lock/info icon in your browser's address bar</li>
+          <li>2. Find "Notifications" in the site settings</li>
+          <li>3. Change the setting from "Block" to "Allow"</li>
+          <li>4. Refresh this page</li>
+        </ol>
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="check-permission-again" class="btn-primary px-6 py-3">Check Again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Toggle Switch Styles */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+  }
+  
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+  }
+  
+  input:checked + .slider {
+    background-color: var(--primary);
+  }
+  
+  input:focus + .slider {
+    box-shadow: 0 0 1px var(--primary);
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(24px);
+  }
+  
+  .slider.round {
+    border-radius: 24px;
+  }
+  
+  .slider.round:before {
+    border-radius: 50%;
+  }
+</style>
+
+<script type="module">
+  import notificationService from '../../scripts/services/notification-service.js';
+  import errorHandler from '../../scripts/utils/error-handler.js';
+  
+  document.addEventListener('DOMContentLoaded', async function() { // Fixed syntax error here (removed extra parenthesis)
+    // Initialize notification service
+    const permissionStatus = await notificationService.initialize();
+    
+    // Set up UI based on permission status
+    updateUI(permissionStatus);
+    
+    // Close modal functionality
+    document.querySelectorAll('#notificationSettingsModal .close-modal-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        closeModal();
+      });
+    });
+    
+    // Close when clicking outside
+    document.getElementById('notificationSettingsModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal();
+      }
+    });
+    
+    // Enable notifications button
+    document.getElementById('enable-notifications').addEventListener('click', async function() {
+      const result = await notificationService.requestPermission();
+      updateUI(result);
+      
+      if (result === 'granted') {
+        errorHandler.showToast('Notifications enabled successfully!', 'success');
+      } else if (result === 'denied') {
+        errorHandler.showToast('Notification permission denied', 'error');
+      }
+    });
+    
+    // Check permission again button
+    document.getElementById('check-permission-again').addEventListener('click', async function() {
+      const result = await notificationService.initialize();
+      updateUI(result);
+    });
+    
+    // Save settings button
+    document.getElementById('save-notification-settings').addEventListener('click', async function() {
+      // Show loading state
+      this.disabled = true;
+      this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+      
+      // Get settings
+      const enabled = document.getElementById('notifications-enabled').checked;
+      const eventReminders = document.getElementById('event-reminders').checked;
+      const vibeUpdates = document.getElementById('vibe-updates').checked;
+      const newEvents = document.getElementById('new-events').checked;
+      
+      // Update preferences
+      const success = await notificationService.updateNotificationPreferences({
+        eventReminders,
+        vibeUpdates,
+        newEvents
+      });
+      
+      // Reset button
+      this.disabled = false;
+      this.innerHTML = 'Save Settings'; // Fixed indentation and added missing line
+      
+      if (success) {
+        // Update enabled status
+        await notificationService.saveToken(null, enabled);
+        
+        // Show success message
+        errorHandler.showToast('Notification settings saved', 'success');
+        
+        // Close modal
+        closeModal();
+      } else {
+        errorHandler.showToast('Failed to save notification settings', 'error');
+      }
+    });
+
+    // Master toggle for all notifications
+    document.getElementById('notifications-enabled').addEventListener('change', function() {
+      const enabled = this.checked;
+      
+      // Update other toggles
+      document.getElementById('event-reminders').disabled = !enabled;
+      document.getElementById('vibe-updates').disabled = !enabled;
+      document.getElementById('new-events').disabled = !enabled;
+    });
+
+    // Load notification preferences
+    await loadNotificationPreferences();
+  });
+
+  // Added the missing functions below
+  function closeModal() {
+    const modal = document.getElementById('notificationSettingsModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+  }
+  
+  async function updateUI(permissionStatus) {
+    // Hide all sections
+    document.getElementById('notifications-not-supported').classList.add('hidden');
+    document.getElementById('notifications-permission').classList.add('hidden');
+    document.getElementById('notifications-settings').classList.add('hidden');
+    document.getElementById('notifications-blocked').classList.add('hidden');
+    
+    // Show appropriate section based on permission status
+    if (permissionStatus === 'not-supported') {
+      document.getElementById('notifications-not-supported').classList.remove('hidden');
+    } else if (permissionStatus === 'default') {
+      document.getElementById('notifications-permission').classList.remove('hidden');
+    } else if (permissionStatus === 'granted') {
+      document.getElementById('notifications-settings').classList.remove('hidden');
+      await loadNotificationPreferences();
+    } else if (permissionStatus === 'denied') {
+      document.getElementById('notifications-blocked').classList.remove('hidden');
+    }
+  }
+  
+  async function loadNotificationPreferences() {
+    try {
+      const preferences = await notificationService.getNotificationPreferences();
+      
+      if (preferences) {
+        // Update toggles
+        document.getElementById('notifications-enabled').checked = preferences.enabled;
+        document.getElementById('event-reminders').checked = preferences.eventReminders;
+        document.getElementById('vibe-updates').checked = preferences.vibeUpdates;
+        document.getElementById('new-events').checked = preferences.newEvents;
+        
+        // Update disabled state
+        document.getElementById('event-reminders').disabled = !preferences.enabled;
+        document.getElementById('vibe-updates').disabled = !preferences.enabled;
+        document.getElementById('new-events').disabled = !preferences.enabled;
+      }
+    } catch (error) {
+      console.error('Error loading notification preferences:', error);
+    }
+  }
+</script>

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Message Moderation - The Play Admin</title>
+  <!-- Include your standard CSS and JS files here -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/styles/main.css">
+  <link rel="stylesheet" href="../../assets/styles/variables.css">
+  <link rel="stylesheet" href="../../assets/styles/layout.css">
+  <link rel="stylesheet" href="../../assets/styles/components.css">
+  <!-- Firebase Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="../../scripts/firebase/config.js"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Header Container -->
+  <div id="header-container"></div>
+  
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Message Moderation</h1>
+        <div class="flex space-x-4">
+          <button id="refresh-btn" class="btn-secondary">
+            <i class="fas fa-sync-alt mr-2"></i> Refresh
+          </button>
+        </div>
+      </div>
+      
+      <!-- Admin Panel -->
+      <div id="admin-panel" class="hidden">
+        <!-- Tabs -->
+        <div class="mb-6 border-b border-gray-200">
+          <div class="flex space-x-4">
+            <button class="tab-btn active py-2 px-4 border-b-2 border-purple-600 font-medium" data-tab="reported">
+              Reported Messages
+              <span id="reported-count" class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">0</span>
+            </button>
+            <button class="tab-btn py-2 px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="flagged">
+              Flagged Content
+              <span id="flagged-count" class="ml-2 bg-yellow-500 text-white text-xs rounded-full px-2 py-0.5">0</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Tab Content -->
+        <div id="tab-reported" class="tab-content">
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+              <div class="flex flex-wrap items-center">
+                <div class="w-full md:w-auto mb-2 md:mb-0 md:mr-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select id="filter-status" class="rounded-lg border border-gray-300 p-2 text-sm w-full md:w-auto">
+                    <option value="all">All</option>
+                    <option value="pending" selected>Pending</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="ignored">Ignored</option>
+                  </select>
+                </div>
+                <div class="w-full md:w-auto mb-2 md:mb-0 md:mr-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                  <select id="filter-reason" class="rounded-lg border border-gray-300 p-2 text-sm w-full md:w-auto">
+                    <option value="all">All</option>
+                    <option value="spam">Spam</option>
+                    <option value="inappropriate">Inappropriate</option>
+                    <option value="harassment">Harassment</option>
+                    <option value="illegal">Illegal</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="w-full md:w-auto">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                  <select id="sort-reports" class="rounded-lg border border-gray-300 p-2 text-sm w-full md:w-auto">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div id="reports-list" class="divide-y divide-gray-200">
+              <div id="reports-loading" class="text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2"></div>
+                <p class="text-gray-600">Loading reports...</p>
+              </div>
+              <div id="no-reports" class="hidden text-center py-8">
+                <p class="text-gray-600">No reported messages found.</p>
+              </div>
+              <!-- Reports will be dynamically added here -->
+            </div>
+          </div>
+        </div>
+        
+        <div id="tab-flagged" class="tab-content hidden">
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+              <div class="flex flex-wrap items-center">
+                <div class="w-full md:w-auto mb-2 md:mb-0 md:mr-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Filter</label>
+                  <select id="filter-flagged" class="rounded-lg border border-gray-300 p-2 text-sm w-full md:w-auto">
+                    <option value="all">All</option>
+                    <option value="profanity">Profanity</option>
+                    <option value="harmful">Harmful Content</option>
+                  </select>
+                </div>
+                <div class="w-full md:w-auto">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                  <select id="sort-flagged" class="rounded-lg border border-gray-300 p-2 text-sm w-full md:w-auto">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div id="flagged-list" class="divide-y divide-gray-200">
+              <div id="flagged-loading" class="text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2"></div>
+                <p class="text-gray-600">Loading flagged content...</p>
+              </div>
+              <div id="no-flagged" class="hidden text-center py-8">
+                <p class="text-gray-600">No flagged content found.</p>
+              </div>
+              <!-- Flagged content will be dynamically added here -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Auth Required Panel -->
+      <div id="auth-required" class="bg-white rounded-xl shadow-md p-8 text-center">
+        <i class="fas fa-lock text-4xl text-gray-400 mb-4"></i>
+        <h2 class="text-xl font-bold mb-2">Admin Access Required</h2>
+        <p class="text-gray-600 mb-6">You need admin privileges to access this page.</p>
+        <a href="../app/index.html" class="btn-primary inline-block">Back to App</a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Message Detail Modal -->
+  <div id="message-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl w-11/12 max-w-2xl p-6" onclick="event.stopPropagation();">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">Message Details</h3>
+        <button class="text-gray-500 hover:text-gray-700 close-modal-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <p class="text-sm text-gray-600">Reported by</p>
+            <p id="detail-reporter" class="font-medium">User Name</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Reported on</p>
+            <p id="detail-timestamp" class="font-medium">Date</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Message sender</p>
+            <p id="detail-sender" class="font-medium">User Name</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Report reason</p>
+            <p id="detail-reason" class="font-medium">Reason</p>
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <p class="text-sm text-gray-600 mb-1">Message content</p>
+          <div id="detail-content" class="p-3 bg-gray-100 rounded-lg"></div>
+        </div>
+        
+        <div id="detail-description-container" class="mb-4">
+          <p class="text-sm text-gray-600 mb-1">Additional comments</p>
+          <div id="detail-description" class="p-3 bg-gray-100 rounded-lg"></div>
+        </div>
+      </div>
+      <div class="flex justify-between border-t border-gray-200 pt-4">
+        <div>
+          <button id="ban-user-btn" class="text-red-600 hover:text-red"
+          
+        <div class="flex justify-between border-t border-gray-200 pt-4">
+        <div>
+          <button id="ban-user-btn" class="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-600 hover:bg-red-50">
+            <i class="fas fa-ban mr-1"></i> Ban User
+          </button>
+        </div>
+        <div class="space-x-3">
+          <button id="ignore-report-btn" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+            Ignore
+          </button>
+          <button id="remove-message-btn" class="btn-primary px-4 py-2">
+            Remove Message
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script type="module">
+    import { loadComponent } from '../../scripts/utils/component-loader.js';
+    import errorHandler from '../../scripts/utils/error-handler.js';
+    
+    // Global variables
+    let currentReportId = null;
+    let currentMessageId = null;
+    let currentRoomId = null;
+    let currentUserId = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load header component
+      loadComponent('header-container', '../../components/header.html');
+      
+      // Check if user is admin
+      checkAdminAccess();
+      
+      // Set up tabs
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          // Update active tab button
+          document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'border-purple-600');
+            b.classList.add('border-transparent', 'text-gray-500');
+          });
+          this.classList.add('active', 'border-purple-600');
+          this.classList.remove('border-transparent', 'text-gray-500');
+          
+          // Show selected tab content
+          const tabId = this.dataset.tab;
+          document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+          });
+          document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+          
+          // Load tab data if needed
+          if (tabId === 'reported') {
+            loadReportedMessages();
+          } else if (tabId === 'flagged') {
+            loadFlaggedContent();
+          }
+        });
+      });
+      
+      // Set up filters
+      document.getElementById('filter-status').addEventListener('change', () => loadReportedMessages());
+      document.getElementById('filter-reason').addEventListener('change', () => loadReportedMessages());
+      document.getElementById('sort-reports').addEventListener('change', () => loadReportedMessages());
+      document.getElementById('filter-flagged').addEventListener('change', () => loadFlaggedContent());
+      document.getElementById('sort-flagged').addEventListener('change', () => loadFlaggedContent());
+      
+      // Set up refresh button
+      document.getElementById('refresh-btn').addEventListener('click', refreshData);
+      
+      // Set up message detail modal
+      setupMessageDetailModal();
+    });
+    
+    async function checkAdminAccess() {
+      try {
+        // Check if user is logged in
+        const user = firebase.auth().currentUser;
+        if (!user) {
+          // Wait for auth state to be determined
+          await new Promise(resolve => {
+            const unsubscribe = firebase.auth().onAuthStateChanged(user => {
+              unsubscribe();
+              resolve(user);
+            });
+          });
+        }
+        
+        // Check if current user is admin
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(firebase.auth().currentUser.uid).get();
+        
+        if (userDoc.exists && userDoc.data().isAdmin) {
+          // Show admin panel
+          document.getElementById('admin-panel').classList.remove('hidden');
+          document.getElementById('auth-required').classList.add('hidden');
+          
+          // Load initial data
+          loadReportedMessages();
+        } else {
+          // Show auth required message
+          document.getElementById('admin-panel').classList.add('hidden');
+          document.getElementById('auth-required').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        errorHandler.showToast('Failed to verify admin access', 'error');
+      }
+    }
+    
+    async function loadReportedMessages() {
+      try {
+        // Show loading state
+        document.getElementById('reports-loading').classList.remove('hidden');
+        document.getElementById('no-reports').classList.add('hidden');
+        
+        // Clear existing reports
+        const reportsList = document.getElementById('reports-list');
+        const existingReports = reportsList.querySelectorAll('.report-item');
+        existingReports.forEach(report => report.remove());
+        
+        // Get filters
+        const statusFilter = document.getElementById('filter-status').value;
+        const reasonFilter = document.getElementById('filter-reason').value;
+        const sortOption = document.getElementById('sort-reports').value;
+        
+        // Query reports
+        const db = firebase.firestore();
+        let query = db.collection('messageReports');
+        
+        // Apply filters
+        if (statusFilter !== 'all') {
+          query = query.where('status', '==', statusFilter);
+        }
+        
+        if (reasonFilter !== 'all') {
+          query = query.where('reason', '==', reasonFilter);
+        }
+        
+        // Apply sorting
+        query = query.orderBy('timestamp', sortOption === 'newest' ? 'desc' : 'asc');
+        
+        const snapshot = await query.get();
+        
+        // Hide loading
+        document.getElementById('reports-loading').classList.add('hidden');
+        
+        // Update counter
+        document.getElementById('reported-count').textContent = snapshot.size;
+        
+        // Check if we have results
+        if (snapshot.empty) {
+          document.getElementById('no-reports').classList.remove('hidden');
+          return;
+        }
+        
+        // Render reports
+        snapshot.forEach(doc => {
+          const report = {
+            id: doc.id,
+            ...doc.data()
+          };
+          
+          const reportElement = createReportElement(report);
+          reportsList.appendChild(reportElement);
+        });
+      } catch (error) {
+        console.error('Error loading reported messages:', error);
+        errorHandler.showToast('Failed to load reported messages', 'error');
+        document.getElementById('reports-loading').classList.add('hidden');
+      }
+    }
+    
+    function createReportElement(report) {
+      const div = document.createElement('div');
+      div.className = 'report-item p-4 hover:bg-gray-50';
+      div.dataset.reportId = report.id;
+      div.dataset.messageId = report.messageId;
+      div.dataset.roomId = report.roomId;
+      div.dataset.userId = report.userId;
+      
+      // Format timestamp
+      const timestamp = report.timestamp ? new Date(report.timestamp.seconds * 1000) : new Date();
+      const formattedDate = timestamp.toLocaleDateString();
+      const formattedTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      // Create status badge
+      let statusBadge = '';
+      if (report.status === 'pending') {
+        statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Pending</span>';
+      } else if (report.status === 'resolved') {
+        statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Resolved</span>';
+      } else if (report.status === 'ignored') {
+        statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Ignored</span>';
+      }
+      
+      // Create reason badge
+      let reasonBadge = '';
+      if (report.reason === 'spam') {
+        reasonBadge = '<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Spam</span>';
+      } else if (report.reason === 'inappropriate') {
+        reasonBadge = '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Inappropriate</span>';
+      } else if (report.reason === 'harassment') {
+        reasonBadge = '<span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">Harassment</span>';
+      } else if (report.reason === 'illegal') {
+        reasonBadge = '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Illegal</span>';
+      } else {
+        reasonBadge = '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Other</span>';
+      }
+      
+      div.innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center justify-between">
+          <div>
+            <div class="flex items-center mb-1">
+              <p class="font-medium">${report.messageContent || 'Message content not available'}</p>
+            </div>
+            <div class="flex flex-wrap items-center text-sm text-gray-600 gap-2">
+              <span>Reported by: ${report.reportedByName || 'User'}</span>
+              <span>•</span>
+              <span>${formattedDate} at ${formattedTime}</span>
+              <span>•</span>
+              <div class="flex space-x-2">
+                ${statusBadge}
+                ${reasonBadge}
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 md:mt-0">
+            <button class="view-report-btn px-3 py-1 text-sm text-purple-600 hover:text-purple-800 border border-purple-600 rounded-lg hover:bg-purple-50">
+              View Details
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Add click event
+      div.querySelector('.view-report-btn').addEventListener('click', () => {
+        openMessageDetail(report);
+      });
+      
+      return div;
+    }
+    
+    async function loadFlaggedContent() {
+      try {
+        // Show loading state
+        document.getElementById('flagged-loading').classList.remove('hidden');
+        document.getElementById('no-flagged').classList.add('hidden');
+        
+        // Clear existing items
+        const flaggedList = document.getElementById('flagged-list');
+        const existingItems = flaggedList.querySelectorAll('.flagged-item');
+        existingItems.forEach(item => item.remove());
+        
+        // Get filters
+        const typeFilter = document.getElementById('filter-flagged').value;
+        const sortOption = document.getElementById('sort-flagged').value;
+        
+        // Query flagged content
+        const db = firebase.firestore();
+        let query = db.collection('flaggedMessages');
+        
+        // Apply filters
+        if (typeFilter === 'profanity') {
+          query = query.where('containsProfanity', '==', true);
+        } else if (typeFilter === 'harmful') {
+          query = query.where('containsHarmfulContent', '==', true);
+        }
+        
+        // Apply sorting
+        query = query.orderBy('timestamp', sortOption === 'newest' ? 'desc' : 'asc');
+        
+        const snapshot = await query.get();
+        
+        // Hide loading
+        document.getElementById('flagged-loading').classList.add('hidden');
+        
+        // Update counter
+        document.getElementById('flagged-count').textContent = snapshot.size;
+        
+        // Check if we have results
+        if (snapshot.empty) {
+          document.getElementById('no-flagged').classList.remove('hidden');
+          return;
+        }
+        
+        // Render flagged content
+        snapshot.forEach(doc => {
+          const flaggedItem = {
+            id: doc.id,
+            ...doc.data()
+          };
+          
+          const itemElement = createFlaggedElement(flaggedItem);
+          flaggedList.appendChild(itemElement);
+        });
+      } catch (error) {
+        console.error('Error loading flagged content:', error);
+        errorHandler.showToast('Failed to load flagged content', 'error');
+        document.getElementById('flagged-loading').classList.add('hidden');
+      }
+    }
+    
+    function createFlaggedElement(item) {
+      const div = document.createElement('div');
+      div.className = 'flagged-item p-4 hover:bg-gray-50';
+      div.dataset.id = item.id;
+      div.dataset.messageId = item.messageId;
+      div.dataset.roomId = item.roomId || item.chatId;
+      div.dataset.userId = item.userId || item.senderId;
+      
+      // Format timestamp
+      const timestamp = item.timestamp ? new Date(item.timestamp.seconds * 1000) : new Date();
+      const formattedDate = timestamp.toLocaleDateString();
+      const formattedTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      // Create badges
+      const badges = [];
+      if (item.containsProfanity) {
+        badges.push('<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Profanity</span>');
+      }
+      if (item.containsHarmfulContent) {
+        badges.push('<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Harmful Content</span>');
+      }
+      
+      div.innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center justify-between">
+          <div>
+            <div class="flex flex-col mb-1">
+              <p class="font-medium">Original: <span class="text-red-600">${item.original || 'Not available'}</span></p>
+              <p class="font-medium">Filtered: <span class="text-green-600">${item.filtered || 'Not available'}</span></p>
+            </div>
+            <div class="flex flex-wrap items-center text-sm text-gray-600 gap-2">
+              <span>User: ${item.userDisplayName || 'Unknown User'}</span>
+              <span>•</span>
+              <span>${formattedDate} at ${formattedTime}</span>
+              <span>•</span>
+              <div class="flex space-x-2">
+                ${badges.join('')}
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 md:mt-0 flex space-x-2">
+            <button class="ignore-flagged-btn px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+              Ignore
+            </button>
+            <button class="remove-flagged-btn px-3 py-1 text-sm text-red-600 border border-red-600 rounded-lg hover:bg-red-50">
+              Remove
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Add click events
+      div.querySelector('.ignore-flagged-btn').addEventListener('click', () => {
+        ignoreFlaggedContent(item.id);
+      });
+      
+      div.querySelector('.remove-flagged-btn').addEventListener('click', () => {
+        removeMessage(item.messageId, item.roomId || item.chatId, 'flagged', item.id);
+      });
+      
+      return div;
+    }
+    
+    function openMessageDetail(report) {
+      // Store current report details
+      currentReportId = report.id;
+      currentMessageId = report.messageId;
+      currentRoomId = report.roomId;
+      currentUserId = report.userId;
+      
+      // Update modal content
+      document.getElementById('detail-reporter').textContent = report.reportedByName || 'Unknown User';
+      document.getElementById('detail-sender').textContent = report.userDisplayName || 'Unknown User';
+      document.getElementById('detail-reason').textContent = report.reason.charAt(0).toUpperCase() + report.reason.slice(1);
+      document.getElementById('detail-content').textContent = report.messageContent || 'Content not available';
+      
+      // Format timestamp
+      const timestamp = report.timestamp ? new Date(report.timestamp.seconds * 1000) : new Date();
+      document.getElementById('detail-timestamp').textContent = timestamp.toLocaleString();
+      
+      // Show/hide description
+      if (report.description) {
+        document.getElementById('detail-description').textContent = report.description;
+        document.getElementById('detail-description-container').classList.remove('hidden');
+      } else {
+        document.getElementById('detail-description-container').classList.add('hidden');
+      }
+      
+      // Show modal
+      document.getElementById('message-detail-modal').classList.remove('hidden');
+    }
+    
+    function setupMessageDetailModal() {
+      // Close modal
+      document.querySelectorAll('#message-detail-modal .close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', closeMessageDetailModal);
+      });
+      
+      // Close when clicking outside
+      document.getElementById('message-detail-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeMessageDetailModal();
+        }
+      });
+      
+      // Action buttons
+      document.getElementById('ignore-report-btn').addEventListener('click', ignoreReport);
+      document.getElementById('remove-message-btn').addEventListener('click', removeReportedMessage);
+      document.getElementById('ban-user-btn').addEventListener('click', banUser);
+    }
+    
+    function closeMessageDetailModal() {
+      document.getElementById('message-detail-modal').classList.add('hidden');
+    }
+    
+    async function ignoreReport() {
+      if (!currentReportId) return;
+      
+      try {
+        // Update report status
+        const db = firebase.firestore();
+        await db.collection('messageReports').doc(currentReportId).update({
+          status: 'ignored',
+          resolvedBy: firebase.auth().currentUser.uid,
+          resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Close modal
+        closeMessageDetailModal();
+        
+        // Refresh reports
+        loadReportedMessages();
+        
+        // Show success message
+        errorHandler.showToast('Report marked as ignored', 'success');
+      } catch (error) {
+        console.error('Error ignoring report:', error);
+        errorHandler.showToast('Failed to update report', 'error');
+      }
+    }
+    
+    async function removeReportedMessage() {
+      await removeMessage(currentMessageId, currentRoomId, 'report', currentReportId);
+    }
+    
+    async function removeMessage(messageId, roomId, source, sourceId) {
+      if (!messageId || !roomId) return;
+      
+      try {
+        // Update message in Realtime Database
+        const db = firebase.database();
+        const realtimeDb = firebase.database();
+        
+        // Try event chat first
+        let messageRef = realtimeDb.ref(`messages/${roomId}/${messageId}`);
+        let messageExists = (await messageRef.once('value')).exists();
+        
+        if (!messageExists) {
+          // Try direct messages
+          messageRef = realtimeDb.ref(`directMessages/${roomId}/${messageId}`);
+          messageExists = (await messageRef.once('value')).exists();
+        }
+        
+        if (messageExists) {
+          // Mark message as hidden but don't delete it
+          await messageRef.update({
+            isHidden: true,
+            hiddenBy: firebase.auth().currentUser.uid,
+            hiddenAt: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+        
+        // Update report/flagged status
+        const firestore = firebase.firestore();
+        if (source === 'report' && sourceId) {
+          await firestore.collection('messageReports').doc(sourceId).update({
+            status: 'resolved',
+            resolution: 'removed',
+            resolvedBy: firebase.auth().currentUser.uid,
+            resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } else if (source === 'flagged' && sourceId) {
+          await firestore.collection('flaggedMessages').doc(sourceId).update({
+            handled: true,
+            handledBy: firebase.auth().currentUser.uid,
+            handledAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        
+        // Close modal if open
+        if (document.getElementById('message-detail-modal').classList.contains('hidden') === false) {
+          closeMessageDetailModal();
+        }
+        
+        // Refresh data
+        refreshData();
+        
+        // Show success message
+        errorHandler.showToast('Message has been removed', 'success');
+      } catch (error) {
+        console.error('Error removing message:', error);
+        errorHandler.showToast('Failed to remove message', 'error');
+      }
+    }
+    
+    async function banUser() {
+      if (!currentUserId) return;
+      
+      if (confirm(`Are you sure you want to ban this user? This will prevent them from sending messages in the future.`)) {
+        try {
+          // Update user in Firestore
+          const db = firebase.firestore();
+          await db.collection('users').doc(currentUserId).update({
+            isBanned: true,
+            bannedBy: firebase.auth().currentUser.uid,
+            bannedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          // Update report if applicable
+          if (currentReportId) {
+            await db.collection('messageReports').doc(currentReportId).update({
+              status: 'resolved',
+              resolution: 'user_banned',
+              resolvedBy: firebase.auth().currentUser.uid,
+              resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+          
+          // Close modal
+          closeMessageDetailModal();
+          
+          // Refresh data
+          refreshData();
+          
+          // Show success message
+          errorHandler.showToast('User has been banned', 'success');
+        } catch (error) {
+          console.error('Error banning user:', error);
+          errorHandler.showToast('Failed to ban user', 'error');
+        }
+      }
+    }
+    
+    async function ignoreFlaggedContent(id) {
+      if (!id) return;
+      
+      try {
+        // Mark as handled
+        const db = firebase.firestore();
+        await db.collection('flaggedMessages').doc(id).update({
+          handled: true,
+          handledBy: firebase.auth().currentUser.uid,
+          handledAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Refresh data
+        loadFlaggedContent();
+        
+        // Show success message
+        errorHandler.showToast('Flagged content marked as handled', 'success');
+      } catch (error) {
+        console.error('Error ignoring flagged content:', error);
+        errorHandler.showToast('Failed to update flagged content', 'error');
+      }
+    }
+    
+    function refreshData() {
+      // Determine which tab is active
+      const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+      
+      // Refresh appropriate data
+      if (activeTab === 'reported') {
+        loadReportedMessages();
+      } else if (activeTab === 'flagged') {
+        loadFlaggedContent();
+      }
+    }
+  </script>
+</body>
+</html>

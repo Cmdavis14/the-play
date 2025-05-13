@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Play</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="scripts/firebase/config.js"></script>
+  <script>
+    // Check authentication state and redirect
+    document.addEventListener('DOMContentLoaded', function() {
+      firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+          // User is signed in, redirect to app
+          window.location.href = 'pages/app/index.html?uid=' + user.uid;
+        } else {
+          // No user is signed in, redirect to login
+          window.location.href = 'pages/auth/login.html';
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <!-- Loading animation or splash screen could go here -->
+  <div style="display: flex; justify-content: center; align-items:
+center; height: 100vh;">
+    <p>Loading...</p>
+  </div>
+</body>
+</html>

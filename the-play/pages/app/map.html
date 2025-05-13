@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Map - The Play</title>
+  <!-- Include your standard CSS and JS files here -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/styles/main.css">
+  <link rel="stylesheet" href="../../assets/styles/variables.css">
+  <link rel="stylesheet" href="../../assets/styles/layout.css">
+  <link rel="stylesheet" href="../../assets/styles/components.css">
+  
+  <!-- Firebase Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="../../scripts/firebase/config.js"></script>
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    .map-container {
+      height: calc(100vh - 6rem);
+    }
+    
+    .event-popup .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    .event-popup .leaflet-popup-content {
+      margin: 0;
+      width: 250px !important;
+    }
+    
+    .event-popup .leaflet-popup-tip {
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .map-filter-panel {
+      z-index: 1000;
+      top: 1rem;
+      left: 1rem;
+      max-width: 300px;
+    }
+    
+    .map-sidebar {
+      height: calc(100vh - 6rem);
+      overflow-y: auto;
+    }
+    
+    .custom-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      border: 2px solid;
+      font-size: 16px;
+    }
+    
+    .marker-music { border-color: #6C63FF; color: #6C63FF; }
+    .marker-art { border-color: #3B82F6; color: #3B82F6; }
+    .marker-food { border-color: #10B981; color: #10B981; }
+    .marker-nightlife { border-color: #EC4899; color: #EC4899; }
+    .marker-sports { border-color: #F59E0B; color: #F59E0B; }
+    .marker-community { border-color: #8B5CF6; color: #8B5CF6; }
+    .marker-other { border-color: #6B7280; color: #6B7280; }
+    
+    .distance-badge {
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #4B5563;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .user-location-marker {
+      z-index: 1000 !important;
+    }
+    
+    .location-btn {
+      position: absolute;
+      right: 10px;
+      bottom: 24px;
+      z-index: 500;
+      width: 44px;
+      height: 44px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      border: none;
+    }
+    
+    .radius-control {
+      position: absolute;
+      right: 70px;
+      bottom: 24px;
+      z-index: 500;
+      background: white;
+      border-radius: 20px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      transition: opacity 0.3s;
+    }
+    
+    .radius-control.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .radius-slider {
+      margin: 0 10px;
+      width: 100px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <!-- Header Container -->
+  <div id="header-container"></div>
+  
+  <div class="flex">
+    <!-- Sidebar (hidden on mobile) -->
+    <div class="hidden lg:block lg:w-1/4 xl:w-1/5 bg-white border-r border-gray-200">
+      <div class="p-4 map-sidebar">
+        <h2 class="text-xl font-bold mb-4">Filters</h2>
+        
+        <!-- Category Filter -->
+        <div class="mb-6">
+          <h3 class="text-sm font-medium mb-2">Event Category</h3>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="checkbox" class="category-filter mr-2" value="music" checked>
+              <span class="text-sm">Music</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="category-filter mr-2" value="art" checked>
+              <span class="text-sm">Art & Culture</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="category-filter mr-2" value="food" checked>
+              <span class="text-sm">Food & Drink</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="category-filter mr-2" value="nightlife" checked>
+              <span class="text-sm">Nightlife</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="category-filter mr-2" value="sports" checked>
+              <span class="text-sm">Sports & Fitness</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="category-filter mr-2" value="community" checked>
+              <span class="text-sm">Community</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="category-filter mr-2" value="other" checked>
+              <span class="text-sm">Other</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Date Filter -->
+        <div class="mb-6">
+          <h3 class="text-sm font-medium mb-2">Date Range</h3>
+          <div class="space-y-3">
+            <label class="block">
+              <span class="text-xs text-gray-600">Start Date</span>
+              <input type="date" id="filter-start-date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">End Date</span>
+              <input type="date" id="filter-end-date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+            </label>
+          </div>
+        </div>
+        
+        <!-- Distance Filter (New) -->
+        <div class="mb-6">
+          <h3 class="text-sm font-medium mb-2">Distance</h3>
+          <div class="space-y-3">
+            <label class="block">
+              <span class="text-xs text-gray-600">Max Distance (km)</span>
+              <input type="range" id="filter-distance" class="w-full mt-1" min="1" max="50" value="20" step="1">
+              <div class="flex justify-between text-xs text-gray-500">
+                <span>1</span>
+                <span id="distance-value">20 km</span>
+                <span>50</span>
+              </div>
+            </label>
+            <div class="flex items-center mt-2">
+              <input type="checkbox" id="filter-use-location" class="mr-2">
+              <span class="text-sm">Only show events within this distance</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Price Filter -->
+        <div class="mb-6">
+          <h3 class="text-sm font-medium mb-2">Price</h3>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="checkbox" id="filter-free" class="mr-2" checked>
+              <span class="text-sm">Free Events</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" id="filter-paid" class="mr-2" checked>
+              <span class="text-sm">Paid Events</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Apply Filters Button -->
+        <button id="apply-filters" class="btn-primary w-full">Apply Filters</button>
+        
+        <!-- Reset Filters Button -->
+        <button id="reset-filters" class="mt-2 w-full py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Reset Filters</button>
+        
+        <!-- Find Events Near Me Button (New) -->
+         <button id="find-near-me" class="mt-4 w-full py-2 px-4 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 flex items-center justify-center">
+          <i class="fas fa-location-arrow mr-2"></i> Events Near Me
+        </button>
+        <div class="border-t border-gray-200 my-6 pt-6">
+          <h2 class="text-xl font-bold mb-4">Events List</h2>
+          <div id="events-list" class="space-y-4">
+            <!-- Events will be dynamically added here -->
+            <div id="events-loading" class="text-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2"></div>
+              <p class="text-gray-600">Loading events...</p>
+            </div>
+            <div id="no-events" class="hidden text-center py-8">
+              <p class="text-gray-600">No events found. Try adjusting your filters.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mobile Filter Panel (hidden by default) -->
+    <div id="mobile-filter-panel" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+      <div class="bg-white rounded-xl m-4 max-w-sm relative">
+        <div class="p-4 border-b border-gray-200">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold">Filters</h2>
+            <button id="close-filters" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-4 overflow-y-auto" style="max-height: 70vh;">
+          <!-- Category Filter -->
+          <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">Event Category</h3>
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input type="checkbox" class="mobile-category-filter mr-2" value="music" checked>
+                <span class="text-sm">Music</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="mobile-category-filter mr-2" value="art" checked>
+                <span class="text-sm">Art & Culture</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="mobile-category-filter mr-2" value="food" checked>
+                <span class="text-sm">Food & Drink</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="mobile-category-filter mr-2" value="nightlife" checked>
+                <span class="text-sm">Nightlife</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="mobile-category-filter mr-2" value="sports" checked>
+                <span class="text-sm">Sports & Fitness</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="mobile-category-filter mr-2" value="community" checked>
+                <span class="text-sm">Community</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="mobile-category-filter mr-2" value="other" checked>
+                <span class="text-sm">Other</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Mobile Date Filter -->
+          <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">Date Range</h3>
+            <div class="space-y-3">
+              <label class="block">
+                <span class="text-xs text-gray-600">Start Date</span>
+                <input type="date" id="mobile-filter-start-date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+              </label>
+              <label class="block">
+                <span class="text-xs text-gray-600">End Date</span>
+                <input type="date" id="mobile-filter-end-date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+              </label>
+            </div>
+          </div>
+          
+          <!-- Mobile Distance Filter (New) -->
+          <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">Distance</h3>
+            <div class="space-y-3">
+              <label class="block">
+                <span class="text-xs text-gray-600">Max Distance (km)</span>
+                <input type="range" id="mobile-filter-distance" class="w-full mt-1" min="1" max="50" value="20" step="1">
+                <div class="flex justify-between text-xs text-gray-500">
+                  <span>1</span>
+                  <span id="mobile-distance-value">20 km</span>
+                  <span>50</span>
+                </div>
+              </label>
+              <div class="flex items-center mt-2">
+                <input type="checkbox" id="mobile-filter-use-location" class="mr-2">
+                <span class="text-sm">Only show events within this distance</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Mobile Price Filter -->
+          <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">Price</h3>
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input type="checkbox" id="mobile-filter-free" class="mr-2" checked>
+                <span class="text-sm">Free Events</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" id="mobile-filter-paid" class="mr-2" checked>
+                <span class="text-sm">Paid Events</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="p-4 border-t border-gray-200">
+          <button id="mobile-apply-filters" class="btn-primary w-full mb-2">Apply Filters</button>
+          <button id="mobile-reset-filters" class="w-full py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Reset Filters</button>
+          <button id="mobile-find-near-me" class="mt-2 w-full py-2 px-4 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 flex items-center justify-center">
+            <i class="fas fa-location-arrow mr-2"></i> Events Near Me
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Map Container -->
+    <div class="w-full lg:w-3/4 xl:w-4/5 relative">
+      <!-- Mobile Filter Button -->
+      <button id="show-filters" class="lg:hidden absolute top-4 left-4 bg-white p-3 rounded-lg shadow-md z-10">
+        <i class="fas fa-filter"></i>
+      </button>
+      
+      <!-- Mobile List Button -->
+      <button id="show-list" class="lg:hidden absolute top-4 right-4 bg-white p-3 rounded-lg shadow-md z-10">
+        <i class="fas fa-list"></i>
+      </button>
+      
+      <!-- Map -->
+      <div id="map" class="map-container"></div>
+      
+      <!-- Location Button -->
+      <button id="location-btn" class="location-btn">
+        <i class="fas fa-location-arrow"></i>
+      </button>
+      
+      <!-- Radius Control -->
+      <div id="radius-control" class="radius-control hidden">
+        <span class="text-xs text-gray-600">Radius:</span>
+        <input type="range" id="radius-slider" class="radius-slider" min="1" max="20" value="5" step="1">
+        <span id="radius-value" class="text-xs font-medium">5 km</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Mobile Events List (hidden by default) -->
+  <div id="mobile-events-list" class="fixed inset-0 bg-white z-50 hidden overflow-y-auto">
+    <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+      <h2 class="text-xl font-bold">Events</h2>
+      <button id="close-list" class="text-gray-500 hover:text-gray-700">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div id="mobile-events-container" class="p-4 space-y-4">
+      <!-- Events will be dynamically added here -->
+      <div id="mobile-events-loading" class="text-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2"></div>
+        <p class="text-gray-600">Loading events...</p>
+      </div>
+      <div id="mobile-no-events" class="hidden text-center py-8">
+        <p class="text-gray-600">No events found. Try adjusting your filters.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Scripts -->
+  <script type="module">
+    import { loadComponent } from '../../scripts/utils/component-loader.js';
+    import eventService from '../../scripts/services/event-service.js';
+    import locationService from '../../scripts/services/location-service.js';
+    import { formatEventDate } from '../../scripts/utils/date-format.js';
+    import errorHandler from '../../scripts/utils/error-handler.js';
+    
+    // Global variables
+    let map;
+    let userMarker;
+    let userLocationCircle;
+    let markers = [];
+    let allEvents = [];
+    let filteredEvents = [];
+    let userLocation = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load header component
+      loadComponent('header-container', '../../components/header.html');
+      
+      // Initialize map
+      initMap();
+      
+      // Set up filters
+      setupFilters();
+      
+      // Set up distance slider
+      setupDistanceSlider();
+      
+      // Load events
+      loadEvents();
+      
+      // Set up mobile UI
+      setupMobileUI();
+      
+      // Set up event listeners
+      setupEventListeners();
+    });
+    
+    function initMap() {
+      // Initialize map centered on San Antonio
+      map = L.map('map').setView([29.4252, -98.4946], 12);
+      
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      
+      // Try to get user's location
+      getUserLocation();
+    }
+    
+    async function getUserLocation() {
+      try {
+        // Get location from service
+        userLocation = await locationService.getUserLocation();
+        
+        // Center map on user's location
+        map.setView([userLocation.latitude, userLocation.longitude], 13);
+        
+        // Add or update user marker
+        if (userMarker) {
+          userMarker.setLatLng([userLocation.latitude, userLocation.longitude]);
+        } else {
+          userMarker = L.marker([userLocation.latitude, userLocation.longitude], {
+            icon: L.divIcon({
+              className: 'user-location-marker',
+              html: '<div class="w-6 h-6 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center"><i class="fas fa-user text-white text-xs"></i></div>',
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            })
+          }).addTo(map)
+            .bindPopup('Your Location')
+            .openPopup();
+        }
+        
+        // Calculate distances for events
+        if (allEvents.length > 0) {
+          updateEventDistances();
+          applyFilters();
+        }
+        
+      } catch (error) {
+        console.warn('Geolocation error:', error);
+        errorHandler.showToast('Unable to get your location. Some features may be limited.', 'warning');
+        
+      }
+    }
+    
+    function updateEventDistances() {
+      if (!userLocation) return;
+      
+      allEvents.forEach(event => {
+        if (event.coordinates) {
+          event.distance = locationService.calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            event.coordinates.lat,
+            event.coordinates.lng
+          );
+        } else {
+          event.distance = null;
+        }
+      });
+    }
+    
+    async function loadEvents() {
+      try {
+        // Show loading states
+        document.getElementById('events-loading').classList.remove('hidden');
+        document.getElementById('mobile-events-loading').classList.remove('hidden');
+        
+        // Hide no events messages
+        document.getElementById('no-events').classList.add('hidden');
+        document.getElementById('mobile-no-events').classList.add('hidden');
+        
+        // Get all events
+        allEvents = await eventService.getEvents({ 
+          dateRange: { 
+            start: new Date() 
+          } 
+        }, 100);
+        
+        // Calculate distances if user location is available
+        if (userLocation) {
+          updateEventDistances();
+        }
+        
+        // Apply filters
+        applyFilters();
+        
+        // Hide loading states
+        document.getElementById('events-loading').classList.add('hidden');
+        document.getElementById('mobile-events-loading').classList.add('hidden');
+      } catch (error) {
+        console.error('Error loading events:', error);
+        errorHandler.showToast('Failed to load events', 'error');
+        
+        // Hide loading states
+        document.getElementById('events-loading').classList.add('hidden');
+        document.getElementById('mobile-events-loading').classList.add('hidden');
+      }
+    }
+    
+    function applyFilters() {
+      // Get filter values
+      const categoryFilters = Array.from(document.querySelectorAll('.category-filter:checked')).map(cb => cb.value);
+      const startDate = document.getElementById('filter-start-date').value ? new Date(document.getElementById('filter-start-date').value) : null;
+      const endDate = document.getElementById('filter-end-date').value ? new Date(document.getElementById('filter-end-date').value) : null;
+      const showFree = document.getElementById('filter-free').checked;
+      const showPaid = document.getElementById('filter-paid').checked;
+      const useDistance = document.getElementById('filter-use-location').checked;
+      const maxDistance = parseInt(document.getElementById('filter-distance').value);
+      
+      // Filter events
+      filteredEvents = allEvents.filter(event => {
+        // Category filter
+        if (!categoryFilters.includes(event.category)) return false;
+        
+        // Date filter
+        if (startDate) {
+          const eventDate = event.dateTime ? new Date(event.dateTime.seconds * 1000) : null;
+          if (eventDate && eventDate < startDate) return false;
+        }
+        
+        if (endDate) {
+          const eventDate = event.dateTime ? new Date(event.dateTime.seconds * 1000) : null;
+          if (eventDate && eventDate > endDate) return false;
+        }
+        
+        // Distance filter
+        if (useDistance && userLocation && event.distance !== null) {
+          if (event.distance > maxDistance) return false;
+        }
+        
+        // Price filter
+        const isFree = !event.price || event.price === 'Free' || event.price === '$0';
+        if (isFree && !showFree) return false;
+        if (!isFree && !showPaid) return false;
+        
+        return true;
+      });
+      
+      // Sort by distance if available
+      if (userLocation) {
+        filteredEvents.sort((a, b) => {
+          // Handle null distances (put at the end)
+          if (a.distance === null && b.distance === null) return 0;
+          if (a.distance === null) return 1;
+          if (b.distance === null) return -1;
+          
+          return a.distance - b.distance;
+        });
+      }
+      
+      // Update map and lists
+      updateMap();
+      updateEventsList();
+      updateMobileEventsList();
+    }
+    
+    function updateMap() {
+      // Remove existing markers
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+      
+      // Add markers for filtered events
+      filteredEvents.forEach(event => {
+        // Skip events without coordinates
+        if (!event.coordinates && !event.location) return;
+        
+        // Get coordinates
+        let coords;
+        if (event.coordinates) {
+          coords = [event.coordinates.lat, event.coordinates.lng];
+        } else {
+          // Geocode the location
+          geocodeLocation(event);
+          return;
+        }
+        
+        // Create custom marker
+        const marker = L.marker(coords, {
+          icon: L.divIcon({
+            className: '',
+            html: `<div class="custom-marker marker-${event.category || 'other'}"><i class="fas ${getCategoryIcon(event.category)}"></i></div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
+          })
+        }).addTo(map);
+        
+        // Create popup content
+        const popupContent = document.createElement('div');
+        popupContent.className = 'event-popup-content';
+        
+        // Format date
+        let dateStr = 'Date TBD';
+        if (event.dateTime) {
+          const dateTime = new Date(event.dateTime.seconds * 1000);
+          dateStr = formatEventDate(dateTime);
+        }
+        
+        // Format distance if available
+        let distanceStr = '';
+        if (event.distance !== null) {
+          distanceStr = `<div class="absolute bottom-2 right-2 distance-badge">
+            <i class="fas fa-map-marker-alt mr-1"></i> ${event.distance.toFixed(1)} km
+          </div>`;
+        }
+        
+        popupContent.innerHTML = `
+          <div class="bg-gray-200 h-32 relative">
+            <img src="${event.imageUrl || '/api/placeholder/400/250'}" alt="${event.title}" class="w-full h-full object-cover">
+            ${distanceStr}
+          </div>
+          <div class="p-3">
+            <h3 class="font-bold text-lg">${event.title}</h3>
+            <p class="text-sm text-gray-600 mb-1">${dateStr}</p>
+            <p class="text-sm text-gray-600 mb-2">
+              <i class="fas fa-map-marker-alt mr-1"></i> ${event.location || 'Location TBD'}
+            </p>
+            <a href="event-detail.html?id=${event.id}" class="btn-primary text-xs py-1 px-3 inline-block">View Details</a>
+          </div>
+        `;
+        
+        // Bind popup to marker
+        marker.bindPopup(popupContent, {
+          className: 'event-popup',
+          maxWidth: 250,
+          closeButton: false
+        });
+        
+        // Add marker to array
+        markers.push(marker);
+      });
+      
+            // If no markers, show message
+      if (markers.length === 0) {
+        errorHandler.showToast('No events found with the current filters', 'info');
+      } else if (markers.length === 1) {
+        // If only one marker, open its popup
+        markers[0].openPopup();
+      }
+      
+      // Update radius circle if needed
+      updateRadiusCircle();
+    }
+    
+    function updateRadiusCircle() {
+      // Remove existing circle if it exists
+      if (userLocationCircle) {
+        map.removeLayer(userLocationCircle);
+        userLocationCircle = null;
+      }
+      
+      // If we have user location and distance filter is enabled, show the radius circle
+      const useDistance = document.getElementById('filter-use-location').checked;
+      const distanceValue = parseInt(document.getElementById('filter-distance').value);
+      
+      if (userLocation && useDistance) {
+        userLocationCircle = L.circle([userLocation.latitude, userLocation.longitude], {
+          radius: distanceValue * 1000, // convert km to meters
+          fillColor: '#3B82F6',
+          fillOpacity: 0.1,
+          color: '#3B82F6',
+          weight: 1
+        }).addTo(map);
+        
+        // Fit map to circle
+        map.fitBounds(userLocationCircle.getBounds());
+      }
+    }
+    
+    function updateEventsList() {
+      const container = document.getElementById('events-list');
+      
+      // Clear existing events (except the loading and no events elements)
+      Array.from(container.children).forEach(child => {
+        if (child.id !== 'events-loading' && child.id !== 'no-events') {
+          container.removeChild(child);
+        }
+      });
+      
+      // Show no events message if no events
+      if (filteredEvents.length === 0) {
+        document.getElementById('no-events').classList.remove('hidden');
+        return;
+      } else {
+        document.getElementById('no-events').classList.add('hidden');
+      }
+      
+      // Add events to list
+      filteredEvents.forEach(event => {
+        const eventElement = createEventListItem(event);
+        container.appendChild(eventElement);
+      });
+    }
+    
+    function updateMobileEventsList() {
+      const container = document.getElementById('mobile-events-container');
+      
+      // Clear existing events (except the loading and no events elements)
+      Array.from(container.children).forEach(child => {
+        if (child.id !== 'mobile-events-loading' && child.id !== 'mobile-no-events') {
+          container.removeChild(child);
+        }
+      });
+      
+      // Show no events message if no events
+      if (filteredEvents.length === 0) {
+        document.getElementById('mobile-no-events').classList.remove('hidden');
+        return;
+      } else {
+        document.getElementById('mobile-no-events').classList.add('hidden');
+      }
+      
+      // Add events to list
+      filteredEvents.forEach(event => {
+        const eventElement = createEventListItem(event);
+        container.appendChild(eventElement);
+      });
+    }
+    
+    function createEventListItem(event) {
+      const div = document.createElement('div');
+      div.className = 'bg-white rounded-lg shadow-sm overflow-hidden flex';
+      
+      // Format date
+      let dateStr = 'Date TBD';
+      if (event.dateTime) {
+        const dateTime = new Date(event.dateTime.seconds * 1000);
+        dateStr = formatEventDate(dateTime);
+      }
+      
+      // Format distance if available
+      let distanceStr = '';
+      if (event.distance !== null) {
+        distanceStr = `<span class="ml-2 text-xs bg-gray-100 rounded-full px-2 py-1">${event.distance.toFixed(1)} km</span>`;
+      }
+      
+      div.innerHTML = `
+        <div class="w-20 h-20 bg-gray-200 flex-shrink-0">
+          <img src="${event.imageUrl || '/api/placeholder/80/80'}" alt="${event.title}" class="w-full h-full object-cover">
+        </div>
+        <div class="p-3 flex-grow">
+          <h3 class="font-medium text-sm line-clamp-1">${event.title}</h3>
+          <p class="text-xs text-gray-600 mb-1 flex items-center flex-wrap">
+            <i class="fas fa-calendar-alt mr-1"></i> ${dateStr}${distanceStr}
+          </p>
+          <p class="text-xs text-gray-600 line-clamp-1">
+            <i class="fas fa-map-marker-alt mr-1"></i> ${event.location || 'Location TBD'}
+          </p>
+        </div>
+      `;
+      
+      // Add click event to navigate to event detail
+      div.addEventListener('click', function() {
+        window.location.href = `event-detail.html?id=${event.id}`;
+      });
+      
+      // If coordinates, add click event to center map on event
+      if (event.coordinates) {
+        const centerBtn = document.createElement('button');
+        centerBtn.className = 'p-2 text-gray-600 hover:text-gray-900 flex-shrink-0 self-center mr-2';
+        centerBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i>';
+        centerBtn.addEventListener('click', function(e) {
+          e.stopPropagation(); // Prevent parent click event
+          
+          // Center map on event
+          map.setView([event.coordinates.lat, event.coordinates.lng], 15);
+          
+          // Find and open the marker popup
+          markers.forEach(marker => {
+            const markerLatLng = marker.getLatLng();
+            if (markerLatLng.lat === event.coordinates.lat && markerLatLng.lng === event.coordinates.lng) {
+              marker.openPopup();
+            }
+          });
+          
+          // Close mobile events list
+          document.getElementById('mobile-events-list').classList.add('hidden');
+        });
+        
+        div.appendChild(centerBtn);
+      }
+      
+      return div;
+    }
+    
+    async function geocodeLocation(event) {
+  try {
+    // Use location service to geocode the address
+    const geocodeResult = await locationService.geocodeAddress(event.location + ', San Antonio, TX');
+    
+    // Save coordinates to event
+    event.coordinates = {
+      lat: geocodeResult.latitude,
+      lng: geocodeResult.longitude
+    };
+    
+    // Add marker for event
+    const marker = L.marker([geocodeResult.latitude, geocodeResult.longitude], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div class="custom-marker marker-${event.category || 'other'}"><i class="fas ${getCategoryIcon(event.category)}"></i></div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      })
+    }).addTo(map);
+    
+    // Create popup content
+    const popupContent = document.createElement('div');
+    popupContent.className = 'event-popup-content';
+    
+    // Format date
+    let dateStr = 'Date TBD';
+    if (event.dateTime) {
+      const dateTime = new Date(event.dateTime.seconds * 1000);
+      dateStr = formatEventDate(dateTime);
+    }
+    
+    // Format distance if available
+    let distanceStr = '';
+    if (userLocation) {
+      const distance = locationService.calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        geocodeResult.latitude,
+        geocodeResult.longitude
+      );
+      event.distance = distance;
+      distanceStr = `<div class="absolute bottom-2 right-2 distance-badge">
+        <i class="fas fa-map-marker-alt mr-1"></i> ${distance.toFixed(1)} km
+      </div>`;
+    }
+    
+    popupContent.innerHTML = `
+      <div class="bg-gray-200 h-32 relative">
+        <img src="${event.imageUrl || '/api/placeholder/400/250'}" alt="${event.title}" class="w-full h-full object-cover">
+        ${distanceStr}
+      </div>
+      <div class="p-3">
+        <h3 class="font-bold text-lg">${event.title}</h3>
+        <p class="text-sm text-gray-600 mb-1">${dateStr}</p>
+        <p class="text-sm text-gray-600 mb-2">
+          <i class="fas fa-map-marker-alt mr-1"></i> ${event.location || 'Location TBD'}
+        </p>
+        <a href="event-detail.html?id=${event.id}" class="btn-primary text-xs py-1 px-3 inline-block">View Details</a>
+      </div>
+    `;
+    
+    // Bind popup to marker
+    marker.bindPopup(popupContent, {
+      className: 'event-popup',
+      maxWidth: 250,
+      closeButton: false
+    });
+    
+    // Add marker to array
+    markers.push(marker);
+    
+    // Update event in Firestore (if created by the user)
+    const currentUser = firebase.auth().currentUser;
+    if (currentUser && event.createdBy === currentUser.uid) {
+      const db = firebase.firestore();
+      db.collection('events').doc(event.id).update({
+        coordinates: {
+          lat: geocodeResult.latitude,
+          lng: geocodeResult.longitude
+        }
+      }).catch(error => {
+        console.error('Error updating coordinates:', error);
+      });
+    }
+  } catch (error) {
+    console.error('Error geocoding location:', error);
+  }
+}
+    
+    function setupFilters() {
+      // Set up filter buttons
+      document.getElementById('apply-filters').addEventListener('click', applyFilters);
+      document.getElementById('reset-filters').addEventListener('click', resetFilters);
+      document.getElementById('mobile-apply-filters').addEventListener('click', function() {
+        // Sync mobile filters to desktop filters
+        syncMobileFilters();
+        applyFilters();
+        closeMobileFilters();
+      });
+      document.getElementById('mobile-reset-filters').addEventListener('click', resetMobileFilters);
+      
+      // Set default dates
+      const today = new Date();
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      document.getElementById('filter-start-date').valueAsDate = today;
+      document.getElementById('filter-end-date').valueAsDate = endOfMonth;
+      document.getElementById('mobile-filter-start-date').valueAsDate = today;
+      document.getElementById('mobile-filter-end-date').valueAsDate = endOfMonth;
+      
+      // Set up location-based filters
+      document.getElementById('filter-use-location').addEventListener('change', function() {
+        updateRadiusCircle();
+      });
+      
+      document.getElementById('mobile-filter-use-location').addEventListener('change', function() {
+        document.getElementById('filter-use-location').checked = this.checked;
+        updateRadiusCircle();
+      });
+    }
+    
+    function setupDistanceSlider() {
+      // Set up distance slider
+      const distanceSlider = document.getElementById('filter-distance');
+      const distanceValue = document.getElementById('distance-value');
+      
+      distanceSlider.addEventListener('input', function() {
+        distanceValue.textContent = `${this.value} km`;
+        
+        // Update mobile slider if it exists
+        const mobileSlider = document.getElementById('mobile-filter-distance');
+        const mobileValue = document.getElementById('mobile-distance-value');
+        
+        if (mobileSlider && mobileValue) {
+          mobileSlider.value = this.value;
+          mobileValue.textContent = `${this.value} km`;
+        }
+        
+        // Update radius circle if it's visible
+        if (document.getElementById('filter-use-location').checked) {
+          updateRadiusCircle();
+        }
+      });
+      
+      // Set up mobile distance slider
+      const mobileDistanceSlider = document.getElementById('mobile-filter-distance');
+      const mobileDistanceValue = document.getElementById('mobile-distance-value');
+      
+      if (mobileDistanceSlider && mobileDistanceValue) {
+        mobileDistanceSlider.addEventListener('input', function() {
+          mobileDistanceValue.textContent = `${this.value} km`;
+          
+          // Update desktop slider
+          distanceSlider.value = this.value;
+          distanceValue.textContent = `${this.value} km`;
+          
+          // Update radius circle if it's visible
+          if (document.getElementById('mobile-filter-use-location').checked) {
+            document.getElementById('filter-use-location').checked = true;
+            updateRadiusCircle();
+          }
+        });
+      }
+      
+      // Set up map radius slider
+      const radiusSlider = document.getElementById('radius-slider');
+      const radiusValue = document.getElementById('radius-value');
+      
+      if (radiusSlider && radiusValue) {
+        radiusSlider.addEventListener('input', function() {
+          radiusValue.textContent = `${this.value} km`;
+          
+          // Update radius circle
+          showRadiusOnMap(parseInt(this.value));
+        });
+      }
+    }
+    
+    function resetFilters() {
+      // Reset category filters
+      document.querySelectorAll('.category-filter').forEach(cb => {
+        cb.checked = true;
+      });
+      
+      // Reset date filters
+      const today = new Date();
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      document.getElementById('filter-start-date').valueAsDate = today;
+      document.getElementById('filter-end-date').valueAsDate = endOfMonth;
+      
+      // Reset distance filters
+      document.getElementById('filter-distance').value = 20;
+      document.getElementById('distance-value').textContent = '20 km';
+      document.getElementById('filter-use-location').checked = false;
+      
+      // Reset price filters
+      document.getElementById('filter-free').checked = true;
+      document.getElementById('filter-paid').checked = true;
+      
+      // Apply filters
+      applyFilters();
+      
+      // Update radius circle
+      updateRadiusCircle();
+    }
+    
+    function resetMobileFilters() {
+      // Reset category filters
+      document.querySelectorAll('.mobile-category-filter').forEach(cb => {
+        cb.checked = true;
+      });
+      
+      // Reset date filters
+      const today = new Date();
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      document.getElementById('mobile-filter-start-date').valueAsDate = today;
+      document.getElementById('mobile-filter-end-date').valueAsDate = endOfMonth;
+      
+      // Reset distance filters
+      document.getElementById('mobile-filter-distance').value = 20;
+      document.getElementById('mobile-distance-value').textContent = '20 km';
+      document.getElementById('mobile-filter-use-location').checked = false;
+      
+      // Reset price filters
+      document.getElementById('mobile-filter-free').checked = true;
+      document.getElementById('mobile-filter-paid').checked = true;
+    }
+    
+    function syncMobileFilters() {
+      // Sync category filters
+      document.querySelectorAll('.mobile-category-filter').forEach(mobileCb => {
+        const desktopCb = document.querySelector(`.category-filter[value="${mobileCb.value}"]`);
+        if (desktopCb) {
+          desktopCb.checked = mobileCb.checked;
+        }
+      });
+      
+      // Sync date filters
+      document.getElementById('filter-start-date').value = document.getElementById('mobile-filter-start-date').value;
+      document.getElementById('filter-end-date').value = document.getElementById('mobile-filter-end-date').value;
+      
+      // Sync distance filters
+      document.getElementById('filter-distance').value = document.getElementById('mobile-filter-distance').value;
+      document.getElementById('distance-value').textContent = document.getElementById('mobile-distance-value').textContent;
+      document.getElementById('filter-use-location').checked = document.getElementById('mobile-filter-use-location').checked;
+      
+      // Sync price filters
+      document.getElementById('filter-free').checked = document.getElementById('mobile-filter-free').checked;
+      document.getElementById('filter-paid').checked = document.getElementById('mobile-filter-paid').checked;
+    }
+    
+    function setupMobileUI() {
+      // Show/hide mobile filter panel
+      document.getElementById('show-filters').addEventListener('click', function() {
+        document.getElementById('mobile-filter-panel').classList.remove('hidden');
+      });
+      
+      document.getElementById('close-filters').addEventListener('click', closeMobileFilters);
+      
+      // Show/hide mobile events list
+      document.getElementById('show-list').addEventListener('click', function() {
+        document.getElementById('mobile-events-list').classList.remove('hidden');
+      });
+      
+      document.getElementById('close-list').addEventListener('click', function() {
+        document.getElementById('mobile-events-list').classList.add('hidden');
+      });
+      
+      // Close when clicking outside content
+      document.getElementById('mobile-filter-panel').addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeMobileFilters();
+        }
+      });
+    }
+    
+    function closeMobileFilters() {
+      document.getElementById('mobile-filter-panel').classList.add('hidden');
+    }
+    
+    function setupEventListeners() {
+      // Set up location button
+      document.getElementById('location-btn').addEventListener('click', function() {
+        if (userLocation) {
+          // If we already have user location, toggle radius control
+          const radiusControl = document.getElementById('radius-control');
+          if (radiusControl.classList.contains('hidden')) {
+            radiusControl.classList.remove('hidden');
+            // Show radius on map
+            const radius = parseInt(document.getElementById('radius-slider').value);
+            showRadiusOnMap(radius);
+          } else {
+            radiusControl.classList.add('hidden');
+            // Hide radius on map
+            if (userLocationCircle) {
+              map.removeLayer(userLocationCircle);
+              userLocationCircle = null;
+            }
+          }
+        } else {
+          // If we don't have user location, try to get it
+          getUserLocation();
+        }
+      });
+      
+      // Set up "Events Near Me" buttons
+      document.getElementById('find-near-me').addEventListener('click', findEventsNearMe);
+      document.getElementById('mobile-find-near-me').addEventListener('click', function() {
+        closeMobileFilters();
+        findEventsNearMe();
+      });
+    }
+    
+    async function findEventsNearMe() {
+      try {
+        // Show loading toast
+        errorHandler.showToast('Finding events near you...', 'info');
+        
+        // Get user location if we don't have it
+        if (!userLocation) {
+          await getUserLocation();
+          
+          if (!userLocation) {
+            errorHandler.showToast('Unable to get your location. Please enable location services and try again.', 'error');
+            return;
+          }
+        }
+        
+        // Update filter to use location
+        document.getElementById('filter-use-location').checked = true;
+        document.getElementById('mobile-filter-use-location').checked = true;
+        
+        // Set a reasonable radius (10km)
+        document.getElementById('filter-distance').value = 10;
+        document.getElementById('distance-value').textContent = '10 km';
+        document.getElementById('mobile-filter-distance').value = 10;
+        document.getElementById('mobile-distance-value').textContent = '10 km';
+        
+        // Apply filters
+        applyFilters();
+        
+        // Show message with number of events found
+        errorHandler.showToast(`Found ${filteredEvents.length} events near you.`, 'success');
+      } catch (error) {
+        console.error('Error finding events near you:', error);
+        errorHandler.showToast('Error finding events. Please try again.', 'error');
+      }
+    }
+    
+    function showRadiusOnMap(radius) {
+      // Remove existing circle if it exists
+      if (userLocationCircle) {
+        map.removeLayer(userLocationCircle);
+      }
+      
+      // If we have user location, show the radius circle
+      if (userLocation) {
+        userLocationCircle = L.circle([userLocation.latitude, userLocation.longitude], {
+          radius: radius * 1000, // convert km to meters
+          fillColor: '#4F46E5',
+          fillOpacity: 0.1,
+          color: '#4F46E5',
+          weight: 1
+        }).addTo(map);
+        
+        // Find events within this radius
+        const nearbyEvents = allEvents.filter(event => {
+          if (!event.coordinates) return false;
+          
+          const distance = locationService.calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            event.coordinates.lat,
+            event.coordinates.lng
+          );
+          
+          return distance <= radius;
+        });
+        
+        // Fit map to circle
+        map.fitBounds(userLocationCircle.getBounds());
+        
+        // Show toast with number of events found
+        errorHandler.showToast(`${nearbyEvents.length} events within ${radius} km of your location.`, 'info');
+      }
+    }
+    
+    function getCategoryIcon(category) {
+      switch (category) {
+        case 'music': return 'fa-music';
+        case 'art': return 'fa-palette';
+        case 'food': return 'fa-utensils';
+        case 'nightlife': return 'fa-glass-cheers';
+        case 'sports': return 'fa-running';
+        case 'community': return 'fa-users';
+        default: return 'fa-calendar-alt';
+      }
+    }
+  </script>
+</body>
+</html>

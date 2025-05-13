@@ -1,0 +1,2245 @@
+The Play - Checklist 2 (Detailed Implementation Plan)
+This in-depth checklist provides specific implementation steps to further improve the structure, maintainability, and functionality of The Play application.
+1. Component Extraction
+Breaking up large HTML files into reusable components will make your code more maintainable and follow best practices.
+1.1. Create Component Loader Utility (Duration: 1 day)
+javascript// Create file: scripts/utils/component-loader.js
+function loadComponent(targetElementId, componentPath) {
+  return fetch(componentPath)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Failed to load component from ${componentPath}`);
+      }
+      return response.text();
+    })
+    .then(html => {
+      const element = document.getElementById(targetElementId);
+      if (element) {
+        element.innerHTML = html;
+        // Execute any scripts in the loaded component
+        const scripts = element.querySelectorAll('script');
+        scripts.forEach(script => {
+          const newScript = document.createElement('script');
+          if (script.src) {
+            newScript.src = script.src;
+          } else {
+            newScript.textContent = script.textContent;
+          }
+          document.head.appendChild(newScript);
+        });
+        return true;
+      } else {
+        console.error(`Element with ID ${targetElementId} not found`);
+        return false;
+      }
+    })
+    .catch(error => {
+      console.error('Error loading component:', error);
+      return false;
+    });
+}
+
+// Export the function
+export { loadComponent };
+1.2. Extract Header Component (Duration: 1 day)
+
+Create the header component file:
+
+html<!-- Create file: components/header.html -->
+<nav class="hidden md:flex items-center justify-between px-8 py-4 bg-white shadow-sm sticky top-0 z-50">
+  <div class="flex items-center">
+    <h1 class="text-2xl font-bold gradient-bg text-transparent bg-clip-text">The Play</h1>
+  </div>
+  <div class="flex items-center space-x-8">
+    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Home</a>
+    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Discover</a>
+    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Map</a>
+    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Popular</a>
+    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Messages</a>
+  </div>
+  <div class="flex items-center space-x-4">
+    <button class="btn-primary">Create Event</button>
+    <button onclick="logOut()" class="btn-secondary">Logout</button>
+    <div class="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
+      <img src="/api/placeholder/100/100" alt="Profile" class="w-full h-full object-cover">
+    </div>
+  </div>
+</nav>
+
+<script>
+  // Component-specific JavaScript can go here
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize any header-specific functionality
+    console.log('Header component loaded');
+  });
+</script>
+
+Modify the main app page to use the header component:
+
+html<!-- Modify: pages/app/index.html -->
+<!-- Replace the entire desktop navigation section with: -->
+<div id="header-container"></div>
+
+<!-- Add to the bottom of the page before closing body tag: -->
+<script type="module">
+  import { loadComponent } from '../../scripts/utils/component-loader.js';
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    loadComponent('header-container', '../../components/header.html');
+  });
+</script>
+1.3. Extract Event Card Component (Duration: 2 days)
+
+Create the event card component:
+
+html<!-- Create file: components/event-card.html -->
+<div class="event-card bg-white">
+  <div class="relative">
+    <img src="/api/placeholder/400/250" alt="Event Image" class="w-full h-48 object-cover">
+    <div class="absolute top-3 right-3 vibe-score">
+      <i class="fas fa-fire mr-1"></i> <span class="event-score">0.0</span>
+    </div>
+    <div class="absolute top-3 left-3 bg-white text-black px-3 py-1 rounded-full text-sm font-medium">
+      <span class="event-time">TBD</span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="flex justify-between items-start mb-2">
+      <h3 class="text-lg font-bold event-title">Event Title</h3>
+      <button class="text-gray-400 hover:text-gray-700 bookmark-btn">
+        <i class="fas fa-bookmark"></i>
+      </button>
+    </div>
+    <div class="flex items-center mb-3">
+      <span class="text-sm text-gray-600 mr-4">
+        <i class="fas fa-map-marker-alt mr-1"></i> <span class="event-location">Location</span>
+      </span>
+      <span class="text-sm text-gray-600">
+        <i class="fas fa-users mr-1"></i> <span class="event-attendees">0</span> going
+      </span>
+    </div>
+    <p class="text-sm text-gray-600 mb-4 event-description">Event description goes here.</p>
+    <div class="flex justify-between items-center">
+      <span class="text-purple-600 font-semibold event-price">$0</span>
+      <button class="btn-primary text-sm event-action-btn">Get Tickets</button>
+    </div>
+  </div>
+</div>
+
+Create an event card renderer in JavaScript:
+
+javascript// Create file: scripts/components/events.js
+function createEventCard(eventData, containerId) {
+  // Clone the template
+  const template = document.getElementById('event-card-template');
+  const clone = template.content.cloneNode(true);
+  
+  // Populate the card with data
+  clone.querySelector('.event-title').textContent = eventData.title;
+  clone.querySelector('.event-score').textContent = eventData.score;
+  clone.querySelector('.event-time').textContent = eventData.time;
+  clone.querySelector('.event-location').textContent = eventData.location;
+  clone.querySelector('.event-attendees').textContent = eventData.attendees;
+  clone.querySelector('.event-description').textContent = eventData.description;
+  clone.querySelector('.event-price').textContent = eventData.price;
+  clone.querySelector('.event-action-btn').textContent = eventData.actionText;
+  
+  // Add event handlers
+  const bookmarkBtn = clone.querySelector('.bookmark-btn');
+  bookmarkBtn.addEventListener('click', function() {
+    toggleBookmark(eventData.id);
+  });
+  
+  const actionBtn = clone.querySelector('.event-action-btn');
+  actionBtn.addEventListener('click', function() {
+    eventAction(eventData.id, eventData.actionType);
+  });
+  
+  // Append to container
+  document.getElementById(containerId).appendChild(clone);
+}
+
+function toggleBookmark(eventId) {
+  console.log(`Toggling bookmark for event ${eventId}`);
+  // Implement bookmark functionality
+}
+
+function eventAction(eventId, actionType) {
+  console.log(`Performing ${actionType} action for event ${eventId}`);
+  // Implement action functionality (buy tickets, RSVP, etc.)
+}
+
+// Function to load events from Firestore
+function loadEvents() {
+  if (firebase && firebase.firestore) {
+    const db = firebase.firestore();
+    db.collection('events')
+      .get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          const eventData = doc.data();
+          eventData.id = doc.id;
+          createEventCard(eventData, 'events-container');
+        });
+      })
+      .catch(error => {
+        console.error('Error loading events:', error);
+      });
+  } else {
+    console.error('Firestore not available');
+    
+    // Load sample data for testing
+    sampleEvents.forEach(eventData => {
+      createEventCard(eventData, 'events-container');
+    });
+  }
+}
+
+// Sample data for testing
+const sampleEvents = [
+  {
+    id: '1',
+    title: 'Neon Nights: 80s Revival',
+    score: '9.2',
+    time: 'Tonight • 9PM',
+    location: 'The Aztec Theatre',
+    attendees: '243',
+    description: 'Experience the ultimate 80s dance party with live DJs, themed cocktails, and retro vibes.',
+    price: '$25 - $45',
+    actionText: 'Get Tickets',
+    actionType: 'tickets'
+  },
+  // Add more sample events here
+];
+
+export { createEventCard, loadEvents, toggleBookmark, eventAction };
+
+Modify the main app page to use the event card component:
+
+html<!-- Modify: pages/app/index.html -->
+<!-- Add this after the opening body tag: -->
+<template id="event-card-template">
+  <!-- Insert the event-card.html content here -->
+</template>
+
+<!-- Replace the event grid section with: -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" id="events-container">
+  <!-- Event cards will be loaded here dynamically -->
+</div>
+
+<!-- Add this to your existing script section: -->
+<script type="module">
+  import { loadEvents } from '../../scripts/components/events.js';
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load event cards
+    loadEvents();
+  });
+</script>
+1.4. Extract Modal Components (Duration: 1 day)
+
+Create the vibe check modal component:
+
+html<!-- Create file: components/modals/vibe-check-modal.html -->
+<div class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" id="vibeCheckModal">
+  <div class="bg-white rounded-xl w-11/12 max-w-md p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">Post a Vibe Check</h3>
+      <button class="text-gray-500 hover:text-gray-700 close-modal-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mb-4">
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center upload-container">
+        <i class="fas fa-camera text-4xl text-gray-400 mb-2"></i>
+        <p class="text-gray-500">Tap to add photos or videos</p>
+      </div>
+    </div>
+    <div class="mb-4">
+      <input type="text" placeholder="Which event are you at?" class="w-full p-3 border border-gray-300 rounded-lg event-input">
+    </div>
+    <div class="mb-4">
+      <textarea placeholder="How's the vibe? (optional)" class="w-full p-3 border border-gray-300 rounded-lg h-24 vibe-description"></textarea>
+    </div>
+    <div class="flex justify-end">
+      <button class="btn-secondary post-vibe-btn">Post Vibe Check</button>
+    </div>
+  </div>
+</div>
+
+Create a modal controller:
+
+javascript// Create file: scripts/components/modals.js
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+  }
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto'; // Allow scrolling
+  }
+}
+
+function initializeVibeCheckModal() {
+  // Load the modal if it's not already in the DOM
+  if (!document.getElementById('vibeCheckModal')) {
+    loadComponent('modal-container', '../../components/modals/vibe-check-modal.html')
+      .then(() => {
+        setupModalEvents();
+      });
+  } else {
+    setupModalEvents();
+  }
+}
+
+function setupModalEvents() {
+  // Close button
+  const closeBtn = document.querySelector('#vibeCheckModal .close-modal-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => closeModal('vibeCheckModal'));
+  }
+  
+  // Click outside to close
+  const modal = document.getElementById('vibeCheckModal');
+  if (modal) {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeModal('vibeCheckModal');
+      }
+    });
+  }
+  
+  // Upload container
+  const uploadContainer = document.querySelector('#vibeCheckModal .upload-container');
+  if (uploadContainer) {
+    uploadContainer.addEventListener('click', () => {
+      // Create a file input and trigger it
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*,video/*';
+      fileInput.multiple = true;
+      
+      fileInput.addEventListener('change', (event) => {
+        handleFileUpload(event.target.files);
+      });
+      
+      fileInput.click();
+    });
+  }
+  
+  // Post button
+  const postBtn = document.querySelector('#vibeCheckModal .post-vibe-btn');
+  if (postBtn) {
+    postBtn.addEventListener('click', postVibeCheck);
+  }
+}
+
+function handleFileUpload(files) {
+  // Display thumbnails of selected files
+  const uploadContainer = document.querySelector('#vibeCheckModal .upload-container');
+  
+  if (files.length > 0) {
+    uploadContainer.innerHTML = '';
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'inline-block m-1 relative';
+        
+        if (file.type.startsWith('image/')) {
+          thumbnail.innerHTML = `
+            <img src="${e.target.result}" alt="Uploaded" class="w-16 h-16 object-cover rounded">
+            <button class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">×</button>
+          `;
+        } else if (file.type.startsWith('video/')) {
+          thumbnail.innerHTML = `
+            <video class="w-16 h-16 object-cover rounded">
+              <source src="${e.target.result}" type="${file.type}">
+            </video>
+            <button class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">×</button>
+          `;
+        }
+        
+        uploadContainer.appendChild(thumbnail);
+      };
+      
+      reader.readAsDataURL(file);
+    }
+  }
+}
+
+function postVibeCheck() {
+  const eventInput = document.querySelector('#vibeCheckModal .event-input');
+  const vibeDescription = document.querySelector('#vibeCheckModal .vibe-description');
+  
+  if (!eventInput.value.trim()) {
+    alert('Please specify which event you are at');
+    return;
+  }
+  
+  // Get current user
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert('You must be logged in to post a vibe check');
+    return;
+  }
+  
+  // Create vibe check data
+  const vibeData = {
+    event: eventInput.value.trim(),
+    description: vibeDescription.value.trim(),
+    userId: user.uid,
+    userDisplayName: user.displayName || user.email,
+    userPhotoURL: user.photoURL,
+    timestamp: new Date(),
+    // Media files would be handled separately
+  };
+  
+  // Save to Firestore
+  if (firebase && firebase.firestore) {
+    const db = firebase.firestore();
+    db.collection('vibeChecks')
+      .add(vibeData)
+      .then((docRef) => {
+        console.log('Vibe check posted with ID:', docRef.id);
+        alert('Your vibe check has been posted!');
+        closeModal('vibeCheckModal');
+        
+        // Clear form
+        eventInput.value = '';
+        vibeDescription.value = '';
+        
+        // Handle media upload separately
+        // This would involve Firebase Storage
+      })
+      .catch((error) => {
+        console.error('Error posting vibe check:', error);
+        alert('Failed to post vibe check. Please try again.');
+      });
+  } else {
+    console.error('Firestore not available');
+    alert('Unable to post vibe check at this time.');
+  }
+}
+
+export { openModal, closeModal, initializeVibeCheckModal };
+
+Modify the main app page to use the modal component:
+
+html<!-- Modify: pages/app/index.html -->
+<!-- Add this div at the end of the body but before scripts: -->
+<div id="modal-container"></div>
+
+<!-- Add this to your script imports: -->
+<script type="module">
+  import { initializeVibeCheckModal, openModal } from '../../scripts/components/modals.js';
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the vibe check modal
+    initializeVibeCheckModal();
+    
+    // Add event listener to the vibe check button
+    const vibeCheckBtn = document.querySelector('.add-vibe-btn');
+    if (vibeCheckBtn) {
+      vibeCheckBtn.addEventListener('click', function() {
+        openModal('vibeCheckModal');
+      });
+    }
+  });
+</script>
+2. JavaScript Modularization (Duration: 5 days)
+2.1. Create User Profile Module
+javascript// Create file: scripts/components/profile.js
+class UserProfile {
+  constructor() {
+    this.currentUser = null;
+    this.userData = null;
+    this.isInitialized = false;
+  }
+  
+  async initialize() {
+    if (this.isInitialized) return;
+    
+    // Wait for Firebase Auth to initialize
+    await new Promise(resolve => {
+      const unsubscribe = firebase.auth().onAuthStateChanged(user => {
+        this.currentUser = user;
+        unsubscribe();
+        resolve();
+      });
+    });
+    
+    if (this.currentUser) {
+      await this.loadUserData();
+    }
+    
+    this.isInitialized = true;
+  }
+  
+  async loadUserData() {
+    if (!this.currentUser) return null;
+    
+    try {
+      const db = firebase.firestore();
+      const doc = await db.collection('users').doc(this.currentUser.uid).get();
+      
+      if (doc.exists) {
+        this.userData = doc.data();
+        return this.userData;
+      } else {
+        // Create user profile if it doesn't exist
+        const userData = {
+          email: this.currentUser.email,
+          displayName: this.currentUser.displayName || this.currentUser.email.split('@')[0],
+          photoURL: this.currentUser.photoURL || null,
+          createdAt: new Date(),
+          lastLogin: new Date()
+        };
+        
+        await db.collection('users').doc(this.currentUser.uid).set(userData);
+        this.userData = userData;
+        return userData;
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      return null;
+    }
+  }
+  
+  getDisplayName() {
+    if (this.userData && this.userData.displayName) {
+      return this.userData.displayName;
+    }
+    
+    if (this.currentUser) {
+      return this.currentUser.displayName || this.currentUser.email.split('@')[0];
+    }
+    
+    return 'User';
+  }
+  
+  getPhotoURL() {
+    if (this.userData && this.userData.photoURL) {
+      return this.userData.photoURL;
+    }
+    
+    if (this.currentUser && this.currentUser.photoURL) {
+      return this.currentUser.photoURL;
+    }
+    
+    return '/api/placeholder/100/100';
+  }
+  
+  async updateProfile(data) {
+    if (!this.currentUser) return false;
+    
+    try {
+      const db = firebase.firestore();
+      await db.collection('users').doc(this.currentUser.uid).update({
+        ...data,
+        updatedAt: new Date()
+      });
+      
+      // Refresh user data
+      await this.loadUserData();
+      return true;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return false;
+    }
+  }
+  
+  async getBookmarkedEvents() {
+    if (!this.currentUser) return [];
+    
+    try {
+      const db = firebase.firestore();
+      const snapshot = await db.collection('bookmarks')
+        .where('userId', '==', this.currentUser.uid)
+        .get();
+      
+      const bookmarkIds = snapshot.docs.map(doc => doc.data().eventId);
+      
+      if (bookmarkIds.length === 0) return [];
+      
+      // Get the actual events
+      const eventsSnapshot = await db.collection('events')
+        .where(firebase.firestore.FieldPath.documentId(), 'in', bookmarkIds)
+        .get();
+      
+      return eventsSnapshot.docs.map(doc => {
+        return {
+          id: doc.id,
+          ...doc.data()
+        };
+      });
+    } catch (error) {
+      console.error('Error getting bookmarked events:', error);
+      return [];
+    }
+  }
+}
+
+// Create a singleton instance
+const userProfile = new UserProfile();
+
+export default userProfile;
+2.2. Create Authentication Module
+javascript// Create file: scripts/auth/authentication.js
+import userProfile from '../components/profile.js';
+
+class Authentication {
+  constructor() {
+    this.auth = firebase.auth();
+    this.db = firebase.firestore();
+  }
+  
+  async signUp(email, password) {
+    try {
+      const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
+      
+      // Create user profile in Firestore
+      await this.db.collection('users').doc(userCredential.user.uid).set({
+        email: email,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
+      
+      return {
+        success: true,
+        user: userCredential.user
+      };
+    } catch (error) {
+      let errorMessage;
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email is already registered. Try logging in instead.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+  
+  async logIn(email, password) {
+    try {
+      const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
+      
+      // Update last login time
+      await this.db.collection('users').doc(userCredential.user.uid).update({
+        lastLogin: new Date()
+      });
+      
+      return {
+        success: true,
+        user: userCredential.user
+      };
+    } catch (error) {
+      let errorMessage;
+      
+      switch (error.code) {
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password. Please try again.';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed login attempts. Please try again later.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+  
+  async signInWithGoogle() {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const result = await this.auth.signInWithPopup(provider);
+      
+      // Create/update user profile in Firestore
+      await this.db.collection('users').doc(result.user.uid).set({
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+        lastLogin: new Date()
+      }, { merge: true });
+      
+      return {
+        success: true,
+        user: result.user
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Google sign-in failed. Please try again.'
+      };
+    }
+  }
+  
+  async signInWithFacebook() {
+    try {
+      const provider = new firebase.auth.FacebookAuthProvider();
+      const result = await this.auth.signInWithPopup(provider);
+      
+      // Create/update user profile in Firestore
+      await this.db.collection('users').doc(result.user.uid).set({
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+        lastLogin: new Date()
+      }, { merge: true });
+      
+      return {
+        success: true,
+        user: result.user
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Facebook sign-in failed. Please try again.'
+      };
+    }
+  }
+  
+  async logOut() {
+    try {
+      await this.auth.signOut();
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  getCurrentUser() {
+    return this.auth.currentUser;
+  }
+  
+  onAuthStateChanged(callback) {
+    return this.auth.onAuthStateChanged(callback);
+  }
+}
+
+// Create a singleton instance
+const authentication = new Authentication();
+
+export default authentication;
+2.3. Create Utility Functions
+javascript// Create file: scripts/utils/date-format.js
+function formatEventDate(date) {
+  const now = new Date();
+  const eventDate = new Date(date);
+  
+  // Check if date is today
+  if (eventDate.toDateString() === now.toDateString()) {
+    return 'Today • ' + formatTime(eventDate);
+  }
+  
+  // Check if date is tomorrow
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (eventDate.toDateString() === tomorrow.toDateString()) {
+    return 'Tomorrow • ' + formatTime(eventDate);
+  }
+  
+  // If date is within the next 7 days, show day of week
+  const nextWeek = new Date(now);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  if (eventDate < nextWeek) {
+    const dayOptions = { weekday: 'short' };
+    return eventDate.toLocaleDateString('en-US', dayOptions) + ' • ' + formatTime(eventDate);
+  }
+  
+  // For dates further in the future, show month and day
+  const options = { month: 'short', day: 'numeric' };
+  return eventDate.toLocaleDateString('en-US', options) + ' • ' + formatTime(eventDate);
+}
+
+function formatTime(date) {
+  // Get hours and minutes
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  
+  // Convert to 12-hour format
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // Handle midnight (0 hours)
+  
+  // Add leading zero to minutes if needed
+  const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+  
+  // Return formatted time
+  return minutes === 0 ? `${hours}${ampm}` : `${hours}:${minutesStr}${ampm}`;
+}
+
+function formatRelativeTime(date) {
+  const now = new Date();
+  const diff = Math.floor((now - new Date(date)) / 1000); // Difference in seconds
+  
+  if (diff < 60) {
+    return 'just now';
+  } else if (diff < 3600) {
+    const minutes = Math.floor(diff / 60);
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+  } else if (diff < 86400) {
+    const hours = Math.floor(diff / 3600);
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+  } else if (diff < 604800) {
+    const days = Math.floor(diff / 86400);
+    return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+  } else {
+    // For older dates, show the actual date
+    const options = { month: 'short', day: 'numeric' };
+    return new Date(date).toLocaleDateString('en-US', options);
+  }
+}
+
+export { formatEventDate, formatTime, formatRelativeTime };
+// Create file: scripts/utils/validation.js
+function validateEmail(email) {
+const re = /^(([^<>()[]\.,;:\s@"]+(.[^<>()[]\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}])|(([a-zA-Z-0-9]+.)+[a-zA-Z]{2,}))$/;
+return re.test(String(email).toLowerCase());
+}
+function validatePassword(password) {
+// At least 6 characters
+if (password.length < 6) {
+return {
+valid: false,
+message: 'Password must be at least 6 characters'
+};
+}
+// Optional: Add more password requirements
+// const hasUpperCase = /[A-Z]/.test(password);
+// const hasLowerCase = /[a-z]/.test(password);
+// const hasNumbers = /\d/.test(password);
+// const hasNonalphas = /\W/.test(password);
+// if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasNonalphas) {
+//   return {
+//     valid: false,
+//     message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+//   };
+// }
+return {
+valid: true
+};
+}
+function validateFormField(field, value) {
+if (!value || value.trim() === '') {
+return {
+valid: false,
+message: ${field} is required
+};
+}
+return {
+valid: true
+};
+}
+export { validateEmail, validatePassword, validateFormField };
+
+## 3. CSS Organization (Duration: 3 days)
+
+### 3.1. Create Component-Specific CSS
+
+```css
+/* Create file: assets/styles/components.css */
+/* Event Card Styles */
+.event-card {
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+}
+
+.vibe-score {
+  background: linear-gradient(120deg, #FF6B6B, #FFC107);
+  color: white;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-weight: bold;
+}
+
+.verified-badge {
+  color: #3897f0;
+  font-size: 1rem;
+  margin-left: 5px;
+}
+
+/* Story Circle Styles */
+.story-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--primary);
+}
+
+/* Map Pin Styles */
+.map-pin {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation Icons */
+.nav-icon {
+  font-size: 1.5rem;
+  color: #888;
+}
+
+.nav-icon.active {
+  color: var(--primary);
+}
+
+/* Feature Icon Styles */
+.feature-icon {
+  background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+3.2. Create Layout-Specific CSS
+css/* Create file: assets/styles/layout.css */
+/* Container Layout */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+/* Grid Layouts */
+.grid-2-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid-2-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.grid-3-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid-3-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-3-columns {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* Flex Layout Helpers */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Spacing Utilities */
+.section-spacing {
+  margin-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+  .section-spacing {
+    margin-bottom: 5rem;
+  }
+}
+
+/* Sticky Header */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Mobile Bottom Navigation */
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+}
+3.3. Update Variables and Theme CSS
+css/* Create file: assets/styles/variables.css */
+:root {
+  /* Color Variables */
+  --primary: #6C63FF;
+  --primary-light: #A5A1FF;
+  --primary-dark: #4B44FF;
+  
+  --secondary: #FF6B6B;
+  --secondary-light: #FF9B9B;
+  --secondary-dark: #FF3B3B;
+  
+  --dark: #2A2A2A;
+  --gray-dark: #4A4A4A;
+  --gray: #888888;
+  --gray-light: #CCCCCC;
+  --light: #F5F5F5;
+  
+  --success: #4CAF50;
+  --warning: #FFC107;
+  --error: #EF4444;
+  --info: #3498DB;
+  
+  /* Typography */
+  --font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem;  /* 36px */
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --spacing-2xl: 3rem;    /* 48px */
+  
+  /* Borders */
+  --border-radius-sm: 0.25rem;   /* 4px */
+  --border-radius-md: 0.5rem;    /* 8px */
+  --border-radius-lg: 1rem;      /* 16px */
+  --border-radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* Z-Index */
+  --z-index-dropdown: 10;
+  --z-index-sticky: 20;
+  --z-index-fixed: 30;
+  --z-index-modal: 40;
+  --z-index-popover: 50;
+  --z-index-tooltip: 60;
+}
+3.4. Update HTML to Use New CSS Files
+Modify the head section of your HTML files to include the new CSS files:
+html<!-- Modify: pages/app/index.html and pages/auth/login.html -->
+<!-- Add these links after your existing CSS links: -->
+<link rel="stylesheet" href="../../assets/styles/variables.css">
+<link rel="stylesheet" href="../../assets/styles/layout.css">
+<link rel="stylesheet" href="../../assets/styles/components.css">
+4. Form Validation (Duration: 2 days)
+4.1. Implement Form Validation in Login/Signup
+Update your login.html page to include client-side validation:
+javascript// Create file: scripts/auth/form-validation.js
+import { validateEmail, validatePassword, validateFormField } from '../utils/validation.js';
+import authentication from './authentication.js';
+
+function setupFormValidation() {
+  // Setup signup form validation
+  const signupForm = document.getElementById('signup-form');
+  if (signupForm) {
+    const signupEmail = document.getElementById('signup-email');
+    const signupPassword = document.getElementById('signup-password');
+    const signupError = document.getElementById('signup-error');
+    const signupSuccess = document.getElementById('signup-success');
+    
+    signupForm.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      // Clear previous messages
+      signupError.style.display = 'none';
+      signupSuccess.style.display = 'none';
+      
+      // Validate email
+      if (!validateEmail(signupEmail.value)) {
+        showError('signup', 'Please enter a valid email address');
+        return;
+      }
+      
+      // Validate password
+      const passwordValidation = validatePassword(signupPassword.value);
+      if (!passwordValidation.valid) {
+        showError('signup', passwordValidation.message);
+        return;
+      }
+      
+      // Attempt signup
+      const result = await authentication.signUp(signupEmail.value, signupPassword.value);
+      
+      if (result.success) {
+        showSuccess('signup', 'Account created successfully!');
+        
+        // Show logged in UI then redirect
+        setTimeout(() => {
+          showLoggedInUser(result.user);
+          
+          setTimeout(() => {
+            window.location.href = '../../pages/app/index.html?uid=' + result.user.uid;
+          }, 1500);
+        }, 1000);
+      } else {
+        showError('signup', result.error);
+      }
+    });
+  }
+  
+  // Setup login form validation
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    const loginError = document.getElementById('login-error');
+    
+    loginForm.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      // Clear previous messages
+      loginError.style.display = 'none';
+      
+      // Validate email
+      if (!validateEmail(loginEmail.value)) {
+        showError('login', 'Please enter a valid email address');
+        return;
+      }
+      
+      // Validate password not empty
+      if (!loginPassword.value) {
+        showError('login', 'Please enter your password');
+        return;
+      }
+      
+      // Attempt login
+      const result = await authentication.logIn(loginEmail.value, loginPassword.value);
+      
+      if (result.success) {
+        // Show logged in UI then redirect
+        showLoggedInUser(result.user);
+        
+        setTimeout(() => {
+          window.location.href = '../../pages/app/index.html?uid=' + result.user.uid;
+        }, 1500);
+      } else {
+        showError('login', result.error);
+      }
+    });
+  }
+  
+  // Setup social login buttons
+  const googleBtn = document.querySelector('[onclick="signInWithGoogle()"]');
+  if (googleBtn) {
+    googleBtn.removeAttribute('onclick');
+    googleBtn.addEventListener('click', async function() {
+      const result = await authentication.signInWithGoogle();
+      
+      if (result.success) {
+        // Show logged in UI then redirect
+        showLoggedInUser(result.user);
+        
+        setTimeout(() => {
+          window.location.href = '../../pages/app/index.html?uid=' + result.user.uid;
+        }, 1500);
+      } else {
+        showError('login', result.error);
+      }
+    });
+  }
+  
+  const facebookBtn = document.querySelector('[onclick="signInWithFacebook()"]');
+  if (facebookBtn) {
+    facebookBtn.removeAttribute('onclick');
+    facebookBtn.addEventListener('click', async function() {
+      const result = await authentication.signInWithFacebook();
+      
+      if (result.success) {
+        // Show logged in UI then redirect
+        showLoggedInUser(result.user);
+        
+        setTimeout(() => {
+          window.location.href = '../../pages/app/index.html?uid=' + result.user.uid;
+        }, 1500);
+      } else {
+        showError('login', result.error);
+      }
+    });
+  }
+}
+
+// Helper functions (these replicate the functions from the original auth.js)
+function showError(formType, message) {
+  const errorElement = document.getElementById(`${formType}-error`);
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+}
+
+function showSuccess(formType, message) {
+  const successElement = document.getElementById(`${formType}-success`);
+  successElement.textContent = message;
+  successElement.style.display = 'block';
+}
+
+function showLoggedInUser(user) {
+  // Hide forms if they exist
+  const signupForm = document.getElementById('signup-form');
+  const loginForm = document.getElementById('login-form');
+  
+  if (signupForm) signupForm.classList.add('hidden');
+  if (loginForm) loginForm.classList.add('hidden');
+  
+  // Update user info elements
+  const userLoggedIn = document.getElementById('user-logged-in');
+  if (userLoggedIn) {
+    const userDisplayName = document.getElementById('user-display-name');
+    const userEmail = document.getElementById('user-email');
+    const userProfilePic = document.getElementById('user-profile-pic');
+    
+    if (userDisplayName) userDisplayName.textContent = user.displayName || 'User';
+    if (userEmail) userEmail.textContent = user.email;
+    if (userProfilePic && user.photoURL) userProfilePic.src = user.photoURL;
+    
+    // Show logged in section
+    userLoggedIn.classList.remove('hidden');
+  }
+}
+
+export { setupFormValidation };
+Add this to your login.html:
+html<!-- Modify: pages/auth/login.html -->
+<!-- Add this to your script imports: -->
+<script type="module">
+  import { setupFormValidation } from '../../scripts/auth/form-validation.js';
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    setupFormValidation();
+  });
+</script>
+4.2. Add Real-time Validation Feedback
+javascript// Add to scripts/auth/form-validation.js
+function setupRealtimeValidation() {
+  // Real-time email validation
+  const emailInputs = document.querySelectorAll('input[type="email"]');
+  emailInputs.forEach(input => {
+    const formType = input.id.split('-')[0]; // 'signup' or 'login'
+    
+    input.addEventListener('blur', function() {
+      if (input.value && !validateEmail(input.value)) {
+        input.classList.add('border-red-500');
+        showFeedback(input, 'Please enter a valid email address', 'error');
+      } else {
+        input.classList.remove('border-red-500');
+        hideFeedback(input);
+      }
+    });
+    
+    input.addEventListener('input', function() {
+      if (input.value && validateEmail(input.value)) {
+        input.classList.remove('border-red-500');
+        input.classList.add('border-green-500');
+        showFeedback(input, 'Valid email', 'success');
+      } else {
+        input.classList.remove('border-green-500');
+        hideFeedback(input);
+      }
+    });
+  });
+  
+  // Real-time password validation
+  const passwordInputs = document.querySelectorAll('input[type="password"]');
+  passwordInputs.forEach(input => {
+    const formType = input.id.split('-')[0]; // 'signup' or 'login'
+    
+    input.addEventListener('input', function() {
+      if (formType === 'signup') {
+        const validation = validatePassword(input.value);
+        if (!validation.valid) {
+          input.classList.add('border-red-500');
+          input.classList.remove('border-green-500');
+          showFeedback(input, validation.message, 'error');
+        } else {
+          input.classList.remove('border-red-500');
+          input.classList.add('border-green-500');
+          showFeedback(input, 'Password meets requirements', 'success');
+        }
+      }
+    });
+  });
+}
+
+function showFeedback(input, message, type) {
+  // Check if feedback element already exists
+  let feedback = input.parentNode.querySelector('.input-feedback');
+  
+  if (!feedback) {
+    // Create feedback element
+    feedback = document.createElement('p');
+    feedback.className = 'input-feedback text-xs mt-1';
+    input.parentNode.appendChild(feedback);
+  }
+  
+  // Set message and style
+  feedback.textContent = message;
+  
+  if (type === 'error') {
+    feedback.className = 'input-feedback text-xs mt-1 text-red-500';
+  } else if (type === 'success') {
+    feedback.className = 'input-feedback text-xs mt-1 text-green-500';
+  }
+}
+
+function hideFeedback(input) {
+  const feedback = input.parentNode.querySelector('.input-feedback');
+  if (feedback) {
+    feedback.textContent = '';
+  }
+}
+
+// Modify the setupFormValidation function to call setupRealtimeValidation
+function setupFormValidation() {
+  // ... existing code ...
+  
+  // Add this line at the end
+  setupRealtimeValidation();
+}
+
+export { setupFormValidation };
+5. Error Handling (Duration: 2 days)
+5.1. Create Error Handling Utility
+javascript// Create file: scripts/utils/error-handler.js
+class ErrorHandler {
+  constructor() {
+    this.errorContainer = null;
+    this.toastContainer = null;
+    this.setupErrorContainer();
+  }
+  
+  setupErrorContainer() {
+    // Check if the container already exists
+    let container = document.getElementById('error-container');
+    if (!container) {
+      // Create the container
+      container = document.createElement('div');
+      container.id = 'error-container';
+      container.className = 'fixed top-0 left-0 right-0 flex flex-col items-center z-50 p-4';
+      document.body.appendChild(container);
+    }
+    this.errorContainer = container;
+    
+    // Create toast container
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.id = 'toast-container';
+      toastContainer.className = 'fixed bottom-20 right-4 flex flex-col items-end z-50';
+      document.body.appendChild(toastContainer);
+    }
+    this.toastContainer = toastContainer;
+  }
+  
+  showError(message, duration = 5000) {
+    // Create error element
+    const errorElement = document.createElement('div');
+    errorElement.className = 'bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg mb-2 flex items-center';
+    errorElement.innerHTML = `
+      <i class="fas fa-exclamation-circle mr-2"></i>
+      <span>${message}</span>
+      <button class="ml-4 text-white hover:text-red-200">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    
+    // Add to container
+    this.errorContainer.appendChild(errorElement);
+    
+    // Add close button event
+    const closeButton = errorElement.querySelector('button');
+    closeButton.addEventListener('click', () => {
+      this.errorContainer.removeChild(errorElement);
+    });
+    
+    // Auto-remove after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        if (errorElement.parentNode === this.errorContainer) {
+          this.errorContainer.removeChild(errorElement);
+        }
+      }, duration);
+    }
+    
+    return errorElement;
+  }
+  
+  showSuccess(message, duration = 3000) {
+    // Create success element
+    const successElement = document.createElement('div');
+    successElement.className = 'bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg mb-2 flex items-center';
+    successElement.innerHTML = `
+      <i class="fas fa-check-circle mr-2"></i>
+      <span>${message}</span>
+      <button class="ml-4 text-white hover:text-green-200">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    
+    // Add to container
+    this.errorContainer.appendChild(successElement);
+    
+    // Add close button event
+    const closeButton = successElement.querySelector('button');
+    closeButton.addEventListener('click', () => {
+      this.errorContainer.removeChild(successElement);
+    });
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+      if (successElement.parentNode === this.errorContainer) {
+        this.errorContainer.removeChild(successElement);
+      }
+    }, duration);
+    
+    return successElement;
+  }
+  
+  showToast(message, type = 'info', duration = 3000) {
+    // Create toast element
+    const toastElement = document.createElement('div');
+    let bgColor = 'bg-gray-800';
+    let icon = 'fas fa-info-circle';
+    
+    if (type === 'success') {
+      bgColor = 'bg-green-500';
+      icon = 'fas fa-check-circle';
+    } else if (type === 'error') {
+      bgColor = 'bg-red-500';
+      icon = 'fas fa-exclamation-circle';
+    } else if (type === 'warning') {
+      bgColor = 'bg-yellow-500';
+      icon = 'fas fa-exclamation-triangle';
+    }
+    
+    toastElement.className = `${bgColor} text-white px-4 py-2 rounded-lg shadow-lg mb-2 flex items-center transform translate-x-full opacity-0 transition-all duration-300`;
+    toastElement.innerHTML = `
+      <i class="${icon} mr-2"></i>
+      <span>${message}</span>
+    `;
+    
+    // Add to container
+    this.toastContainer.appendChild(toastElement);
+    
+    // Animate in
+    setTimeout(() => {
+      toastElement.classList.remove('translate-x-full', 'opacity-0');
+    }, 10);
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+      toastElement.classList.add('translate-x-full', 'opacity-0');
+      
+      setTimeout(() => {
+        if (toastElement.parentNode === this.toastContainer) {
+          this.toastContainer.removeChild(toastElement);
+        }
+      }, 300);
+    }, duration);
+    
+    return toastElement;
+  }
+  
+  logError(error, context = {}) {
+    // Log to console
+    console.error('Error:', error);
+    console.error('Context:', context);
+    
+    // In a production environment, you'd send this to your error tracking service
+    // Example: Sentry.captureException(error, { extra: context });
+    
+    return {
+      error,
+      context,
+      timestamp: new Date()
+    };
+  }
+}
+
+// Create a singleton instance
+const errorHandler = new ErrorHandler();
+
+export default errorHandler;
+5.2. Implement Error Handling Throughout the App
+Update authentication.js to use the error handler:
+javascript// Modify: scripts/auth/authentication.js
+import userProfile from '../components/profile.js';
+import errorHandler from '../utils/error-handler.js';
+
+class Authentication {
+  // ... existing code ...
+  
+  async signUp(email, password) {
+    try {
+      // ... existing code ...
+    } catch (error) {
+      // Log the error
+      errorHandler.logError(error, { method: 'signUp', email });
+      
+      let errorMessage;
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email is already registered. Try logging in instead.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+  
+  // Update other methods similarly
+}
+
+// ... rest of the file ...
+6. Loading States (Duration: 2 days)
+6.1. Create Loading Component
+javascript// Create file: scripts/components/loading.js
+class LoadingManager {
+  constructor() {
+    this.loadingOverlay = null;
+    this.spinnerSize = 'md';
+    this.spinnerColor = 'primary';
+    this.setupLoadingOverlay();
+  }
+  
+  setupLoadingOverlay() {
+    // Check if the overlay already exists
+    let overlay = document.getElementById('loading-overlay');
+    if (!overlay) {
+      // Create the overlay
+      overlay = document.createElement('div');
+      overlay.id = 'loading-overlay';
+      overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+      
+      // Create the spinner
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner-container';
+      spinner.innerHTML = `
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <p class="text-white mt-4 font-medium">Loading...</p>
+      `;
+      
+      overlay.appendChild(spinner);
+      document.body.appendChild(overlay);
+    }
+    
+    this.loadingOverlay = overlay;
+  }
+  
+  showLoading(message = 'Loading...') {
+    // Update message
+    const messageElement = this.loadingOverlay.querySelector('p');
+    if (messageElement) {
+      messageElement.textContent = message;
+    }
+    
+    // Show the overlay
+    this.loadingOverlay.classList.remove('hidden');
+    
+    // Disable scrolling on body
+    document.body.style.overflow = 'hidden';
+  }
+  
+  hideLoading() {
+    // Hide the overlay
+    this.loadingOverlay.classList.add('hidden');
+    
+    // Re-enable scrolling
+    document.body.style.overflow = 'auto';
+  }
+  
+  createButtonSpinner(button, text = 'Loading...') {
+    // Store original button content
+    button.dataset.originalContent = button.innerHTML;
+    
+    // Replace with spinner
+    button.innerHTML = `
+      <div class="inline-block align-middle mr-2">
+        <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+      </div>
+      <span>${text}</span>
+    `;
+    
+    // Disable the button
+    button.disabled = true;
+    button.classList.add('opacity-75', 'cursor-not-allowed');
+  }
+  
+  resetButton(button) {
+    // Restore original content
+    if (button.dataset.originalContent) {
+      button.innerHTML = button.dataset.originalContent;
+    }
+    
+    // Enable the button
+    button.disabled = false;
+    button.classList.remove('opacity-75', 'cursor-not-allowed');
+  }
+  
+  createInlineLoader(selector) {
+    const element = document.querySelector(selector);
+    if (!element) return null;
+    
+    // Create loader element
+    const loader = document.createElement('div');
+    loader.className = 'inline-loader flex items-center justify-center py-8';
+    loader.innerHTML = `
+      <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      <p class="ml-3 text-gray-600">Loading...</p>
+    `;
+    
+    // Insert loader into element
+    element.appendChild(loader);
+    
+    return loader;
+  }
+  
+  removeInlineLoader(selector) {
+    const element = document.querySelector(selector);
+    if (!element) return;
+    
+    const loader = element.querySelector('.inline-loader');
+    if (loader) {
+      element.removeChild(loader);
+    }
+  }
+}
+
+// Create a singleton instance
+const loadingManager = new LoadingManager();
+
+export default loadingManager;
+6.2. Update Authentication to Show Loading States
+javascript// Modify: scripts/auth/authentication.js
+import userProfile from '../components/profile.js';
+import errorHandler from '../utils/error-handler.js';
+import loadingManager from '../components/loading.js';
+
+class Authentication {
+  // ... existing code ...
+  
+  async signUp(email, password) {
+    try {
+      // Show loading
+      loadingManager.showLoading('Creating your account...');
+      
+      const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
+      
+      // Create user profile in Firestore
+      await this.db.collection('users').doc(userCredential.user.uid).set({
+        email: email,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
+      
+      // Hide loading
+      loadingManager.hideLoading();
+      
+      return {
+        success: true,
+        user: userCredential.user
+      };
+    } catch (error) {
+      // Hide loading
+      loadingManager.hideLoading();
+      
+      // Log the error
+      errorHandler.logError(error, { method: 'signUp', email });
+      
+      let errorMessage;
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email is already registered. Try logging in instead.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+  
+  // Update other methods similarly
+}
+
+// ... rest of the file ...
+6.3. Implement Button Loading States
+Update form validation:
+javascript// Modify: scripts/auth/form-validation.js
+import { validateEmail, validatePassword, validateFormField } from '../utils/validation.js';
+import authentication from './authentication.js';
+import loadingManager from '../components/loading.js';
+
+function setupFormValidation() {
+  // Setup signup form validation
+  const signupForm = document.getElementById('signup-form');
+  if (signupForm) {
+    const signupEmail = document.getElementById('signup-email');
+    const signupPassword = document.getElementById('signup-password');
+    const signupError = document.getElementById('signup-error');
+    const signupSuccess = document.getElementById('signup-success');
+    const signupButton = signupForm.querySelector('button[type="submit"]');
+    
+    signupForm.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      // Clear previous messages
+      signupError.style.display = 'none';
+      signupSuccess.style.display = 'none';
+      
+      // Validate email
+      if (!validateEmail(signupEmail.value)) {
+        showError('signup', 'Please enter a valid email address');
+        return;
+      }
+      
+      // Validate password
+      const passwordValidation = validatePassword(signupPassword.value);
+      if (!passwordValidation.valid) {
+        showError('signup', passwordValidation.message);
+        return;
+      }
+      
+      // Show loading state
+      loadingManager.createButtonSpinner(signupButton, 'Creating account...');
+      
+      // Attempt signup
+      const result = await authentication.signUp(signupEmail.value, signupPassword.value);
+      
+      // Reset button
+      loadingManager.resetButton(signupButton);
+      
+      if (result.success) {
+        showSuccess('signup', 'Account created successfully!');
+        
+        // Show logged in UI then redirect
+        setTimeout(() => {
+          showLoggedInUser(result.user);
+          
+          setTimeout(() => {
+            window.location.href = '../../pages/app/index.html?uid=' + result.user.uid;
+          }, 1500);
+        }, 1000);
+      } else {
+        showError('signup', result.error);
+      }
+    });
+  }
+  
+  // Update login form similarly
+  
+  // ... rest of the function ...
+}
+
+// ... rest of the file ...
+7. Implement Event Creation (Duration: 3 days)
+7.1. Create Event Form Component
+html<!-- Create file: components/events/event-form.html -->
+<div class="bg-white rounded-xl shadow-lg p-6">
+  <h2 class="text-2xl font-bold mb-6">Create an Event</h2>
+  
+  <form id="event-form" class="space-y-6">
+    <!-- Event title -->
+    <div>
+      <label for="event-title" class="block text-gray-700 text-sm font-medium mb-2">Event Title</label>
+      <input type="text" id="event-title" name="title" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+    </div>
+    
+    <!-- Event description -->
+    <div>
+      <label for="event-description" class="block text-gray-700 text-sm font-medium mb-2">Description</label>
+      <textarea id="event-description" name="description" rows="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+    </div>
+    
+    <!-- Date and Time -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="event-date" class="block text-gray-700 text-sm font-medium mb-2">Date</label>
+        <input type="date" id="event-date" name="date" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+      </div>
+      <div>
+        <label for="event-time" class="block text-gray-700 text-sm font-medium mb-2">Time</label>
+        <input type="time" id="event-time" name="time" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+      </div>
+    </div>
+    
+    <!-- Location -->
+    <div>
+      <label for="event-location" class="block text-gray-700 text-sm font-medium mb-2">Location</label>
+      <input type="text" id="event-location" name="location" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+    </div>
+    
+    <!-- Price -->
+    <div>
+      <label for="event-price" class="block text-gray-700 text-sm font-medium mb-2">Price</label>
+      <input type="text" id="event-price" name="price" placeholder="$0 for free events" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+    </div>
+    
+    <!-- Image upload -->
+    <div>
+      <label class="block text-gray-700 text-sm font-medium mb-2">Event Image</label>
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50" id="image-upload-container">
+        <i class="fas fa-image text-4xl text-gray-400 mb-2"></i>
+        <p class="text-gray-500">Click to upload an image</p>
+        <input type="file" id="event-image" name="image" accept="image/*" class="hidden">
+      </div>
+      <div id="image-preview" class="hidden mt-4">
+        <img src="" alt="Preview" class="w-full h-48 object-cover rounded-lg">
+        <button type="button" id="remove-image" class="mt-2 text-red-500 text-sm">Remove image</button>
+      </div>
+    </div>
+    
+    <!-- Event type / category -->
+    <div>
+      <label for="event-category" class="block text-gray-700 text-sm font-medium mb-2">Category</label>
+      <select id="event-category" name="category" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <option value="">Select a category</option>
+        <option value="music">Music</option>
+        <option value="art">Art & Culture</option>
+        <option value="food">Food & Drink</option>
+        <option value="nightlife">Nightlife</option>
+        <option value="sports">Sports & Fitness</option>
+        <option value="community">Community</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    
+    <!-- Error message -->
+    <div id="event-form-error" class="hidden bg-red-100 text-red-700 p-3 rounded-lg"></div>
+    
+    <!-- Submit button -->
+    <div class="flex justify-end">
+      <button type="button" id="cancel-event" class="mr-4 px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
+      <button type="submit" id="submit-event" class="btn-primary">Create Event</button>
+    </div>
+  </form>
+</div>
+7.2. Implement Event Creation Logic
+javascript// Create file: scripts/components/event-creation.js
+import loadingManager from './loading.js';
+import errorHandler from '../utils/error-handler.js';
+
+class EventCreator {
+  constructor() {
+    this.imageFile = null;
+    this.form = null;
+    this.cancelBtn = null;
+    this.submitBtn = null;
+    
+    this.imageUploadContainer = null;
+    this.imagePreview = null;
+    this.removeImageBtn = null;
+  }
+  
+  initialize() {
+    // Find form elements
+    this.form = document.getElementById('event-form');
+    this.cancelBtn = document.getElementById('cancel-event');
+    this.submitBtn = document.getElementById('submit-event');
+    
+    this.imageUploadContainer = document.getElementById('image-upload-container');
+    this.imageInput = document.getElementById('event-image');
+    this.imagePreview = document.getElementById('image-preview');
+    this.removeImageBtn = document.getElementById('remove-image');
+    
+    if (!this.form) return;
+    
+    // Set up event listeners
+    this.setupImageUpload();
+    this.setupFormSubmission();
+    
+    // Cancel button
+    if (this.cancelBtn) {
+      this.cancelBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to cancel? Your event data will be lost.')) {
+          window.location.href = '../../pages/app/index.html';
+        }
+      });
+    }
+  }
+  
+  setupImageUpload() {
+    if (!this.imageUploadContainer || !this.imageInput) return;
+    
+    // Click on container triggers file input
+    this.imageUploadContainer.addEventListener('click', () => {
+      this.imageInput.click();
+    });
+    
+    // Handle file selection
+    this.imageInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        errorHandler.showToast('Please select an image file', 'error');
+        return;
+      }
+      
+      // Save file for later upload
+      this.imageFile = file;
+      
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const previewImg = this.imagePreview.querySelector('img');
+        previewImg.src = e.target.result;
+        this.imagePreview.classList.remove('hidden');
+        this.imageUploadContainer.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Remove image button
+    if (this.removeImageBtn) {
+      this.removeImageBtn.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent triggering container click
+        
+        // Clear file input
+        this.imageInput.value = '';
+        this.imageFile = null;
+        
+        // Hide preview, show upload container
+        this.imagePreview.classList.add('hidden');
+        this.imageUploadContainer.classList.remove('hidden');
+      });
+    }
+  }
+  
+  setupFormSubmission() {
+    if (!this.form) return;
+    
+    this.form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      
+      // Validate form
+      const isValid = this.validateForm();
+      if (!isValid) return;
+      
+      // Show loading state
+      loadingManager.createButtonSpinner(this.submitBtn, 'Creating event...');
+      
+      try {
+        // Get form data
+        const formData = this.getFormData();
+        
+        // Upload image if exists
+        if (this.imageFile) {
+          const imageUrl = await this.uploadImage(this.imageFile);
+          formData.imageUrl = imageUrl;
+        }
+        
+        // Create event in Firestore
+        await this.createEvent(formData);
+        
+        // Show success and redirect
+        errorHandler.showSuccess('Event created successfully!');
+        setTimeout(() => {
+          window.location.href = '../../pages/app/index.html';
+        }, 1500);
+      } catch (error) {
+        // Log error
+        errorHandler.logError(error, { method: 'createEvent' });
+        
+        // Show error
+        const errorElement = document.getElementById('event-form-error');
+        errorElement.textContent = error.message || 'Failed to create event. Please try again.';
+        errorElement.classList.remove('hidden');
+        
+        // Reset button
+        loadingManager.resetButton(this.submitBtn);
+      }
+    });
+  }
+  
+  validateForm() {
+    const title = document.getElementById('event-title').value.trim();
+    const description = document.getElementById('event-description').value.trim();
+    const date = document.getElementById('event-date').value;
+    const time = document.getElementById('event-time').value;
+    const location = document.getElementById('event-location').value.trim();
+    const category = document.getElementById('event-category').value;
+    
+    const errorElement = document.getElementById('event-form-error');
+    
+    if (!title) {
+      errorElement.textContent = 'Please enter an event title';
+      errorElement.classList.remove('hidden');
+      return false;
+    }
+    
+    if (!description) {
+      errorElement.textContent = 'Please enter an event description';
+      errorElement.classList.remove('hidden');
+      return false;
+    }
+    
+    if (!date) {
+      errorElement.textContent = 'Please select an event date';
+      errorElement.classList.remove('hidden');
+      return false;
+    }
+    
+    if (!time) {
+      errorElement.textContent = 'Please select an event time';
+      errorElement.classList.remove('hidden');
+      return false;
+    }
+    
+    if (!location) {
+      errorElement.textContent = 'Please enter an event location';
+      errorElement.classList.remove('hidden');
+      return false;
+    }
+    
+    if (!category) {
+      errorElement.textContent = 'Please select an event category';
+      errorElement.classList.remove('hidden');
+      return false;
+    }
+    
+    // Hide error if all is valid
+    errorElement.classList.add('hidden');
+    return true;
+  }
+  
+  getFormData() {
+    const title = document.getElementById('event-title').value.trim();
+    const description = document.getElementById('event-description').value.trim();
+    const date = document.getElementById('event-date').value;
+    const time = document.getElementById('event-time').value;
+    const location = document.getElementById('event-location').value.trim();
+    const price = document.getElementById('event-price').value.trim();
+    const category = document.getElementById('event-category').value;
+    
+    // Combine date and time
+    const dateTime = new Date(`${date}T${time}`);
+    
+    // Get current user
+    const user = firebase.auth().currentUser;
+    
+    return {
+      title,
+      description,
+      dateTime,
+      location,
+      price: price || 'Free',
+      category,
+      createdBy: user.uid,
+      createdAt: new Date(),
+      attendees: 0,
+      score: Math.floor(Math.random() * 3) + 7, // Random score between 7-9 for now
+    };
+  }
+  
+  async uploadImage(file) {
+    // Create a storage reference
+    const storageRef = firebase.storage().ref();
+    const fileRef = storageRef.child(`event-images/${Date.now()}_${file.name}`);
+    
+    // Upload file
+    const snapshot = await fileRef.put(file);
+    
+    // Get download URL
+    const downloadURL = await snapshot.ref.getDownloadURL();
+    
+    return downloadURL;
+  }
+  
+  async createEvent(eventData) {
+    // Add to Firestore
+    const db = firebase.firestore();
+    const docRef = await db.collection('events').add(eventData);
+    
+    return docRef.id;
+  }
+}
+
+// Create instance
+const eventCreator = new EventCreator();
+
+export default eventCreator;
+7.3. Create Event Creation Page
+html<!-- Create file: pages/app/create-event.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Event - The Play</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/styles/variables.css">
+  <link rel="stylesheet" href="../../assets/styles/main.css">
+  <link rel="stylesheet" href="../../assets/styles/layout.css">
+  <link rel="stylesheet" href="../../assets/styles/components.css">
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  
+  <!-- Firebase config -->
+  <script src="../../scripts/firebase/config.js"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Header Container -->
+  <div id="header-container"></div>
+  
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+      <!-- Event Form Container -->
+      <div id="event-form-container"></div>
+    </div>
+  </div>
+  
+  <!-- Modal Container -->
+  <div id="modal-container"></div>
+  
+  <!-- Scripts -->
+  <script type="module">
+    import { loadComponent } from '../../scripts/utils/component-loader.js';
+    import eventCreator from '../../scripts/components/event-creation.js';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication
+      firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+          // Load components
+          loadComponent('header-container', '../../components/header.html')
+            .then(() => {
+              return loadComponent('event-form-container', '../../components/events/event-form.html');
+            })
+            .then(() => {
+              // Initialize event creator
+              eventCreator.initialize();
+            });
+        } else {
+          // Redirect to login
+          window.location.href = '../../pages/auth/login.html';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+7.4. Update Header Component for Create Event Button
+html<!-- Modify: components/header.html -->
+<!-- Find the "Create Event" button and replace it with: -->
+<a href="../../pages/app/create-event.html" class="btn-primary">Create Event</a>
+These implementations provide a comprehensive plan for enhancing "The Play" with modular components, better code organization, improved user experience, and more robust functionality. Each task is broken down into specific, actionable steps with code examples to guide implementation.
+Testing Recommendations
+For each component and feature implemented:
+
+Test in isolation first (use console.log to verify functionality)
+Test integration with other components
+Test on different browsers and screen sizes
+Test error cases and edge cases
+Have team members review code and test functionality
+
+Documentation Recommendations
+
+Add comments to all functions explaining their purpose
+Create README files for each directory explaining its contents and purpose
+Document the project structure and conventions for new team members

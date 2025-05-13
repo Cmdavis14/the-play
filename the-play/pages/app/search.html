@@ -1,0 +1,461 @@
+<!-- Create file: pages/app/search.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Events - The Play</title>
+  <!-- Include your standard CSS and JS files here -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/styles/main.css">
+  <link rel="stylesheet" href="../../assets/styles/variables.css">
+  <link rel="stylesheet" href="../../assets/styles/layout.css">
+  <link rel="stylesheet" href="../../assets/styles/components.css">
+  
+  <!-- Firebase Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="../../scripts/firebase/config.js"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Header Container -->
+  <div id="header-container"></div>
+  
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <!-- Search Form -->
+      <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+        <h1 class="text-2xl font-bold mb-6">Search Events</h1>
+        
+        <form id="search-form">
+          <div class="relative mb-6">
+            <input type="text" id="search-input" placeholder="Search events, venues, or categories" class="w-full py-3 px-12 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
+            <button type="submit" class="absolute right-4 top-2 btn-primary py-2 px-4">Search</button>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Category Filter -->
+            <div>
+              <label for="search-category" class="block text-gray-700 text-sm font-medium mb-2">Category</label>
+              <select id="search-category" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">All Categories</option>
+                <option value="music">Music</option>
+                <option value="art">Art & Culture</option>
+                <option value="food">Food & Drink</option>
+                <option value="nightlife">Nightlife</option>
+                <option value="sports">Sports & Fitness</option>
+                <option value="community">Community</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <!-- Date Filter -->
+            <div>
+              <label for="search-date" class="block text-gray-700 text-sm font-medium mb-2">Date</label>
+              <select id="search-date" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">Any Date</option>
+                <option value="today">Today</option>
+                <option value="tomorrow">Tomorrow</option>
+                <option value="this-weekend">This Weekend</option>
+                <option value="this-week">This Week</option>
+                <option value="next-week">Next Week</option>
+                <option value="this-month">This Month</option>
+              </select>
+            </div>
+            
+            <!-- Price Filter -->
+            <div>
+              <label for="search-price" class="block text-gray-700 text-sm font-medium mb-2">Price</label>
+              <select id="search-price" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">Any Price</option>
+                <option value="free">Free</option>
+                <option value="paid">Paid</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Search Results -->
+      <div id="search-results">
+        <!-- Initial state -->
+        <div id="initial-state" class="text-center py-12">
+          <i class="fas fa-search text-5xl text-gray-300 mb-4"></i>
+          <p class="text-gray-600">Search for events above to see results</p>
+        </div>
+        
+        <!-- Loading state (hidden by default) -->
+        <div id="loading-state" class="text-center py-12 hidden">
+          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p class="text-gray-600">Searching for events...</p>
+        </div>
+        
+        <!-- No results state (hidden by default) -->
+        <div id="no-results" class="text-center py-12 hidden">
+          <i class="fas fa-search text-5xl text-gray-300 mb-4"></i>
+          <p class="text-gray-600">No events found. Try adjusting your search.</p>
+        </div>
+        
+        <!-- Results Grid (hidden by default) -->
+        <div id="results-grid" class="hidden">
+          <h2 class="text-xl font-bold mb-4">Search Results</h2>
+          <div id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Results will be added here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  // Complete version of search.html script section
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Load header component
+  loadComponent('header-container', '../../components/header.html');
+  
+  // Setup search form
+  setupSearchForm();
+  
+  // Check if search was passed in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryParam = urlParams.get('q');
+  const categoryParam = urlParams.get('category');
+  const dateParam = urlParams.get('date');
+  const priceParam = urlParams.get('price');
+  
+  if (queryParam) {
+    // Set the search input value
+    document.getElementById('search-input').value = queryParam;
+    
+    // Set other filter values if they exist
+    if (categoryParam) {
+      document.getElementById('search-category').value = categoryParam;
+    }
+    
+    if (dateParam) {
+      document.getElementById('search-date').value = dateParam;
+    }
+    
+    if (priceParam) {
+      document.getElementById('search-price').value = priceParam;
+    }
+    
+    // Perform search
+    performSearch();
+  }
+});
+
+function setupSearchForm() {
+  const searchForm = document.getElementById('search-form');
+  
+  searchForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const searchInput = document.getElementById('search-input');
+    const searchQuery = searchInput.value.trim();
+    
+    if (!searchQuery) {
+      errorHandler.showToast('Please enter a search term', 'warning');
+      return;
+    }
+    
+    performSearch();
+  });
+  
+  // Add change event listeners to filters for instant results
+  document.getElementById('search-category').addEventListener('change', function() {
+    const searchQuery = document.getElementById('search-input').value.trim();
+    if (searchQuery) {
+      performSearch();
+    }
+  });
+  
+  document.getElementById('search-date').addEventListener('change', function() {
+    const searchQuery = document.getElementById('search-input').value.trim();
+    if (searchQuery) {
+      performSearch();
+    }
+  });
+  
+  document.getElementById('search-price').addEventListener('change', function() {
+    const searchQuery = document.getElementById('search-input').value.trim();
+    if (searchQuery) {
+      performSearch();
+    }
+  });
+}
+
+async function performSearch() {
+  // Show loading state
+  showLoadingState();
+  
+  // Get search parameters
+  const searchQuery = document.getElementById('search-input').value.trim();
+  const categoryFilter = document.getElementById('search-category').value;
+  const dateFilter = document.getElementById('search-date').value;
+  const priceFilter = document.getElementById('search-price').value;
+  
+  try {
+    // Get all events (we'll implement server-side search in a future update)
+    const allEvents = await eventService.getEvents({}, 100);
+    
+    // Client-side filtering for now
+    const filteredEvents = filterEvents(allEvents, {
+      query: searchQuery,
+      category: categoryFilter,
+      date: dateFilter,
+      price: priceFilter
+    });
+    
+    // Display results
+    displaySearchResults(filteredEvents);
+    
+    // Update URL with search parameters
+    updateSearchURL(searchQuery, categoryFilter, dateFilter, priceFilter);
+  } catch (error) {
+    console.error('Search error:', error);
+    errorHandler.showToast('Error searching events', 'error');
+    showNoResults();
+  }
+}
+
+function filterEvents(events, filters) {
+  return events.filter(event => {
+    // Text search
+    if (filters.query) {
+      const query = filters.query.toLowerCase();
+      const title = (event.title || '').toLowerCase();
+      const description = (event.description || '').toLowerCase();
+      const location = (event.location || '').toLowerCase();
+      const category = (event.category || '').toLowerCase();
+      
+      // If none of the fields match the query, exclude this event
+      if (!title.includes(query) && 
+          !description.includes(query) && 
+          !location.includes(query) && 
+          !category.includes(query)) {
+        return false;
+      }
+    }
+    
+    // Category filter
+    if (filters.category && event.category !== filters.category) {
+      return false;
+    }
+    
+    // Date filter
+    if (filters.date) {
+      const eventDate = event.dateTime ? new Date(event.dateTime.seconds * 1000) : null;
+      
+      if (!eventDate) {
+        return false;
+      }
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      // Get day of week (0 = Sunday, 6 = Saturday)
+      const currentDay = today.getDay();
+      
+      // Calculate days until weekend
+      const daysUntilSaturday = currentDay === 6 ? 0 : 6 - currentDay;
+      
+      // Calculate weekend range
+      const saturday = new Date(today);
+      saturday.setDate(today.getDate() + daysUntilSaturday);
+      
+      const sunday = new Date(saturday);
+      sunday.setDate(saturday.getDate() + 1);
+      
+      // Calculate week range
+      const endOfWeek = new Date(today);
+      endOfWeek.setDate(today.getDate() + (7 - currentDay));
+      
+      const startOfNextWeek = new Date(endOfWeek);
+      startOfNextWeek.setDate(endOfWeek.getDate() + 1);
+      
+      const endOfNextWeek = new Date(startOfNextWeek);
+      endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
+      
+      // Calculate month range
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      switch (filters.date) {
+        case 'today':
+          // Event date must be today
+          if (eventDate < today || eventDate >= tomorrow) {
+            return false;
+          }
+          break;
+          
+        case 'tomorrow':
+          // Event date must be tomorrow
+          const dayAfterTomorrow = new Date(tomorrow);
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+          
+          if (eventDate < tomorrow || eventDate >= dayAfterTomorrow) {
+            return false;
+          }
+          break;
+          
+        case 'this-weekend':
+          // Event date must be this weekend (Saturday or Sunday)
+          if (eventDate < saturday || eventDate >= new Date(sunday.setDate(sunday.getDate() + 1))) {
+            return false;
+          }
+          break;
+          
+        case 'this-week':
+          // Event date must be within the current week
+          if (eventDate < today || eventDate > endOfWeek) {
+            return false;
+          }
+          break;
+          
+        case 'next-week':
+          // Event date must be within next week
+          if (eventDate < startOfNextWeek || eventDate > endOfNextWeek) {
+            return false;
+          }
+          break;
+          
+        case 'this-month':
+          // Event date must be within the current month
+          if (eventDate < today || eventDate > endOfMonth) {
+            return false;
+          }
+          break;
+      }
+    }
+    
+    // Price filter
+    if (filters.price) {
+      const isFree = !event.price || event.price === 'Free' || event.price === '$0' || event.price === 0;
+      
+      if (filters.price === 'free' && !isFree) {
+        return false;
+      }
+      
+      if (filters.price === 'paid' && isFree) {
+        return false;
+      }
+    }
+    
+    // All filters passed, include this event
+    return true;
+  });
+}
+
+function displaySearchResults(events) {
+  const initialState = document.getElementById('initial-state');
+  const loadingState = document.getElementById('loading-state');
+  const noResults = document.getElementById('no-results');
+  const resultsGrid = document.getElementById('results-grid');
+  const resultsContainer = document.getElementById('results-container');
+  
+  // Hide all states
+  initialState.classList.add('hidden');
+  loadingState.classList.add('hidden');
+  noResults.classList.add('hidden');
+  resultsGrid.classList.add('hidden');
+  
+  // Clear results container
+  resultsContainer.innerHTML = '';
+  
+  // Check if we have results
+  if (events.length === 0) {
+    noResults.classList.remove('hidden');
+    return;
+  }
+  
+  // Add events to results container
+  events.forEach(event => {
+    const eventElement = createEventElement(event);
+    resultsContainer.appendChild(eventElement);
+  });
+  
+  // Show results grid
+  resultsGrid.classList.remove('hidden');
+}
+
+function createEventElement(event) {
+  const element = document.createElement('div');
+  element.className = 'bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer';
+  
+  // Format date
+  let dateStr = 'Date TBD';
+  if (event.dateTime) {
+    const dateTime = new Date(event.dateTime.seconds * 1000);
+    dateStr = formatEventDate(dateTime);
+  }
+  
+  element.innerHTML = `
+    <div class="h-36 bg-gray-200 relative">
+      <img src="${event.imageUrl || '../../assets/images/placeholder.jpg'}" alt="${event.title}" class="w-full h-full object-cover">
+      <div class="absolute top-2 right-2 bg-purple-500 text-white rounded-full px-2 py-1 text-xs">
+        <i class="fas fa-fire mr-1"></i> ${event.score || '8.5'}
+      </div>
+      ${event.category ? `<div class="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white rounded-lg px-2 py-1 text-xs">
+        ${event.category}
+      </div>` : ''}
+    </div>
+    <div class="p-4">
+      <h3 class="font-bold text-lg mb-1 line-clamp-1">${event.title}</h3>
+      <p class="text-sm text-gray-600 mb-2">
+        <i class="fas fa-calendar-alt mr-1"></i> ${dateStr}
+      </p>
+      <p class="text-sm text-gray-600 truncate">
+        <i class="fas fa-map-marker-alt mr-1"></i> ${event.location || 'Location TBD'}
+      </p>
+      ${event.price ? `<p class="text-sm text-gray-800 mt-2 font-medium">
+        ${event.price === 'Free' || event.price === '$0' || event.price === 0 ? 'Free' : `$${event.price}`}
+      </p>` : ''}
+    </div>
+  `;
+  
+  // Add click event
+  element.addEventListener('click', () => {
+    window.location.href = `event-detail.html?id=${event.id}`;
+  });
+  
+  return element;
+}
+
+function showLoadingState() {
+  document.getElementById('initial-state').classList.add('hidden');
+  document.getElementById('no-results').classList.add('hidden');
+  document.getElementById('results-grid').classList.add('hidden');
+  document.getElementById('loading-state').classList.remove('hidden');
+}
+
+function showNoResults() {
+  document.getElementById('initial-state').classList.add('hidden');
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('results-grid').classList.add('hidden');
+  document.getElementById('no-results').classList.remove('hidden');
+}
+
+function updateSearchURL(query, category, date, price) {
+  // Create a URL object
+  const url = new URL(window.location.href);
+  
+  // Clear existing parameters
+  url.search = '';
+  
+  // Add parameters if they have values
+  if (query) url.searchParams.set('q', query);
+  if (category) url.searchParams.set('category', category);
+  if (date) url.searchParams.set('date', date);
+  if (price) url.searchParams.set('price', price);
+  
+  // Update the URL without reloading the page
+  window.history.pushState({}, '', url);
+}

@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages - The Play</title>
+  <!-- Include your standard CSS and JS files here -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/styles/main.css">
+  <link rel="stylesheet" href="../../assets/styles/variables.css">
+  <link rel="stylesheet" href="../../assets/styles/layout.css">
+  <link rel="stylesheet" href="../../assets/styles/components.css">
+  <!-- Firebase Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="../../scripts/firebase/config.js"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Header Container -->
+  <div id="header-container"></div>
+  
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+      <h1 class="text-2xl font-bold mb-6">Messages</h1>
+      
+      <!-- Authentication Check -->
+      <div id="auth-required" class="hidden bg-white rounded-xl shadow-md p-8 text-center">
+        <i class="fas fa-lock text-4xl text-gray-400 mb-4"></i>
+        <h2 class="text-xl font-bold mb-2">Sign In Required</h2>
+        <p class="text-gray-600 mb-6">You need to sign in to access your messages.</p>
+        <a href="../auth/login.html" class="btn-primary inline-block">Sign In</a>
+      </div>
+      
+      <!-- Messages UI -->
+      <div id="messages-container" class="hidden">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="flex flex-col md:flex-row h-[calc(80vh)]">
+            <!-- Left Sidebar - Conversations -->
+            <div class="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
+              <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="font-bold">Conversations</h2>
+                <button id="new-message-btn" class="btn-secondary-sm">
+                  <i class="fas fa-plus mr-1"></i> New
+                </button>
+              </div>
+              
+              <!-- Search -->
+              <div class="p-3 border-b border-gray-200">
+                <div class="relative">
+                  <input type="text" id="conversation-search" placeholder="Search messages..." class="w-full py-2 px-4 pr-8 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                </div>
+              </div>
+              
+              <!-- Conversation List -->
+              <div class="overflow-y-auto flex-grow" id="conversation-list">
+                <div id="conversations-loading" class="text-center py-8">
+                  <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2"></div>
+                  <p class="text-gray-600">Loading conversations...</p>
+                </div>
+                <div id="no-conversations" class="hidden text-center py-8">
+                  <p class="text-gray-600 mb-3">No conversations yet</p>
+                  <button id="start-conversation-btn" class="btn-secondary-sm">
+                    <i class="fas fa-plus mr-1"></i> Start a Conversation
+                  </button>
+                </div>
+                <!-- Conversations will be dynamically added here -->
+              </div>
+            </div>
+            
+            <!-- Right Side - Chat -->
+            <div class="w-full md:w-2/3 flex flex-col">
+              <!-- Default State - No conversation selected -->
+              <div id="no-conversation-selected" class="flex-grow flex items-center justify-center p-8 text-center">
+                <div>
+                  <i class="fas fa-comments text-6xl text-gray-300 mb-4"></i>
+                  <h3 class="text-xl font-bold mb-2">Your Messages</h3>
+                  <p class="text-gray-600">Select a conversation or start a new one</p>
+                </div>
+              </div>
+              
+              <!-- Chat Area - Hidden until conversation selected -->
+              <div id="chat-area" class="hidden flex flex-col h-full">
+                <!-- Chat Header -->
+                <div class="p-4 border-b border-gray-200 flex items-center">
+                  <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mr-3">
+                    <img id="chat-user-photo" src="/api/placeholder/40/40" alt="User" class="w-full h-full object-cover">
+                  </div>
+                  <div class="flex-grow">
+                    <h3 id="chat-user-name" class="font-bold">User Name</h3>
+                  </div>
+                  <div class="dropdown relative">
+                    <button class="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="dropdown-menu hidden absolute right-0 mt-2 bg-white shadow-md rounded-lg py-2 w-48 z-10">
+                      <button id="view-profile-btn" class="w-full text-left px-4 py-2 hover:bg-gray-100">
+                        <i class="fas fa-user mr-2"></i> View Profile
+                      </button>
+                      <button id="block-user-btn" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">
+                        <i class="fas fa-ban mr-2"></i> Block User
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Messages -->
+                <div id="chat-messages" class="flex-grow overflow-y-auto p-4 bg-gray-50">
+                  <!-- Messages will be dynamically added here -->
+                </div>
+                
+                <!-- Typing Indicator -->
+                <div id="typing-indicator" class="px-4 py-1 text-gray-500 text-sm hidden">
+                  <div class="flex items-center">
+                    <div class="typing-animation mr-2">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    <span>User is typing...</span>
+                  </div>
+                </div>
+                
+                <!-- Message Input -->
+                <div class="border-t border-gray-200 p-3">
+                  <form id="message-form" class="relative">
+                    <div class="flex items-center">
+                      <button type="button" id="media-upload-btn" class="p-2 text-gray-500 hover:text-purple-600">
+                        <i class="fas fa-image"></i>
+                      </button>
+                      <input type="text" id="message-input" class="flex-grow p-2 border border-gray-300 rounded-lg" placeholder="Type a message...">
+                      <button type="submit" class="ml-2 p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-paper-plane"></i>
+                      </button>
+                    </div>
+                    <!-- Media preview -->
+                    <div id="media-preview" class="hidden mt-2 relative bg-gray-100 rounded-lg p-2">
+                      <div class="flex items-center">
+                        <div class="w-16 h-16 overflow-hidden rounded-lg mr-2">
+                          <img id="media-preview-image" src="" alt="Media preview" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-grow">
+                          <p id="media-preview-name" class="text-sm truncate"></p>
+                          <button type="button" id="media-remove-btn" class="text-xs text-red-600 hover:text-red-800">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <input type="file" id="media-upload-input" class="hidden" accept="image/*,video/*">
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- New Message Modal -->
+  <div id="new-message-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl w-11/12 max-w-md p-6" onclick="event.stopPropagation();">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">New Message</h3>
+        <button class="text-gray-500 hover:text-gray-700 close-modal-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mb-4">
+        <label for="user-search" class="block text-gray-700 text-sm font-medium mb-2">To:</label>
+        <div class="relative">
+          <input type="text" id="user-search" class="w-full p-3 border border-gray-300 rounded-lg pr-10" placeholder="Search for a user...">
+          <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+        </div>
+      </div>
+      <div id="user-search-results" class="max-h-60 overflow-y-auto mb-4">
+        <!-- Search results will be displayed here -->
+      </div>
+      <div class="flex justify-end">
+        <button type="button" class="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 close-modal-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    /* Typing indicator animation */
+    .typing-animation {
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .typing-animation span {
+      height: 6px;
+      width: 6px;
+      margin: 0 1px;
+      background-color: #9CA3AF;
+      border-radius: 50%;
+      display: inline-block;
+      animation: typing-dot 1.4s infinite ease-in-out both;
+    }
+    
+    .typing-animation span:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+    
+    .typing-animation span:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+    
+    @keyframes typing-dot {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Message styles */
+    .message-bubble {
+      max-width: 80%;
+      word-break: break-word;
+    }
+    
+    .message-bubble.outgoing {
+      background-color: #8B5CF6;
+      color: white;
+      border-radius: 16px 16px 4px 16px;
+      align-self: flex-end;
+    }
+    
+    .message-bubble.incoming {
+      background-color: #E5E7EB;
+      color: #1F2937;
+      border-radius: 16px 16px 16px 4px;
+      align-self: flex-start;
+    }
+    
+    .message-timestamp {
+      font-size: 0.7rem;
+      margin-top: 2px;
+    }
+    
+    /* Conversation list */
+    .conversation-item {
+      transition: all 0.2s ease;
+    }
+    
+    .conversation-item:hover {
+      background-color: #F3F4F6;
+    }
+    
+    .conversation-item.active {
+      background-color: #EBF4FF;
+      border-left: 3px solid #8B5CF6;
+    }
+    
+    .unread-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: #8B5CF6;
+      color: white;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+  
+  <!-- Scripts -->
+  <script type="module">
+    import { loadComponent } from '../../scripts/utils/component-loader.js';
+    import chatService from '../../scripts/services/chat-service.js';
+    import errorHandler from '../../scripts/utils/error-handler.js';
+    import { formatTime } from '../../scripts/utils/date-format.js';
+    
+    // Global variables
+    let currentChatId = null;
+    let currentOtherUserId = null;
+    let messagesListener = null;
+    let typingListener = null;
+    let conversationsListener = null;
+    let mediaFile = null;
+    let typingTimeout = null;
+    let currentUser = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load header component
+      loadComponent('header-container', '../../components/header.html');
+      
+      // Check authentication
+      firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+          currentUser = user;
+          // Initialize chat
+          initializeMessaging();
+        } else {
+          // Show auth required message
+          document.getElementById('auth-required').classList.remove('hidden');
+          document.getElementById('messages-container').classList.add('hidden');
+        }
+      });
+      
+      // Set up dropdown toggle
+      document.querySelector('.dropdown button').addEventListener('click', function() {
+        document.querySelector('.dropdown-menu').classList.toggle('hidden');
+      });
+      
+      // Close dropdown when clicking elsewhere
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+          document.querySelector('.dropdown-menu').classList.add('hidden');
+        }
+      });
+      
+      // Set up new message button
+      document.getElementById('new-message-btn').addEventListener('click', openNewMessageModal);
+      document.getElementById('start-conversation-btn').addEventListener('click', openNewMessageModal);
+      
+      // Set up close modal buttons
+      document.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', closeNewMessageModal);
+      });
+      
+      // Close when clicking outside modal
+      document.getElementById('new-message-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeNewMessageModal();
+        }
+      });
+      
+      // Set up user search
+      document.getElementById('user-search').addEventListener('input', debounce(searchUsers, 300));
+      
+      // Set up message form
+      document.getElementById('message-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+      });
+      
+      // Set up message input typing
+      document.getElementById('message-input').addEventListener('input', function() {
+        handleTyping();
+      });
+      
+      // Set up media upload
+      document.getElementById('media-upload-btn').addEventListener('click', function() {
+        document.getElementById('media-upload-input').click();
+      });
+      
+      document.getElementById('media-upload-input').addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+          handleMediaUpload(e.target.files[0]);
+        }
+      });
+      
+      document.getElementById('media-remove-btn').addEventListener('click', removeMedia);
+      
+      // Profile button
+      document.getElementById('view-profile-btn').addEventListener('click', function() {
+        if (currentOtherUserId) {
+          window.location.href = `profile.html?id=${currentOtherUserId}`;
+        }
+      });
+      
+      // Block user button
+      document.getElementById('block-user-btn').addEventListener('click', function() {
+        if (currentOtherUserId) {
+          confirmBlockUser(currentOtherUserId);
+        }
+      });
+      
+      // Search conversations
+      document.getElementById('conversation-search').addEventListener('input', function(e) {
+        filterConversations(e.target.value.trim().toLowerCase());
+      });
+    });
+    
+    async function initializeMessaging() {
+      try {
+        // Show messages container
+        document.getElementById('auth-required').classList.add('hidden');
+        document.getElementById('messages-container').classList.remove('hidden');
+        
+        // Initialize chat service
+        await chatService.initialize();
+        
+        // Listen for conversations
+        conversationsListener = chatService.listenToUserConversations(conversations => {
+          renderConversations(conversations);
+        });
+      } catch (error) {
+        console.error('Error initializing messaging:', error);
+        errorHandler.showToast('Failed to load messages', 'error');
+      }
+    }
+    
+    function renderConversations(conversations) {
+      const conversationList = document.getElementById('conversation-list');
+      const noConversations = document.getElementById('no-conversations');
+      const conversationsLoading = document.getElementById('conversations-loading');
+      
+      // Hide loading
+      conversationsLoading.classList.add('hidden');
+      
+      // Check if we have conversations
+      if (conversations.length === 0) {
+        noConversations.classList.remove('hidden');
+        return;
+      } else {
+        noConversations.classList.add('hidden');
+      }
+      
+      // Remove existing conversation items (except static elements)
+      const existingItems = conversationList.querySelectorAll('.conversation-item');
+      existingItems.forEach(item => {
+        item.remove();
+      });
+      
+      // Add conversations
+      conversations.forEach(conversation => {
+        const conversationItem = createConversationItem(conversation);
+        conversationList.appendChild(conversationItem);
+      });
+    }
+    
+    function createConversationItem(conversation) {
+      const div = document.createElement('div');
+      div.className = 'conversation-item p-3 border-b border-gray-200 cursor-pointer';
+      div.dataset.chatId = conversation.id;
+      div.dataset.userId = conversation.otherUserId;
+      
+      // Check if this is the active conversation
+      if (currentChatId === conversation.id) {
+        div.classList.add('active');
+      }
+      
+      // Format timestamp
+      let timeStr = '';
+      if (conversation.lastTimestamp) {
+        const timestamp = new Date(conversation.lastTimestamp);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const messageDate = new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate());
+        
+        if (messageDate.getTime() === today.getTime()) {
+          // Today - show time
+          timeStr = formatTime(timestamp);
+        } else if (messageDate.getTime() === yesterday.getTime()) {
+          // Yesterday
+          timeStr = 'Yesterday';
+        } else {
+          // Other date
+          timeStr = timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+      }
+      
+      // Create HTML
+      div.innerHTML = `
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-full bg-gray-200 overflow-hidden mr-3">
+            <img src="${conversation.otherUserPhoto || '/api/placeholder/48/48'}" alt="${conversation.otherUserName}" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-grow mr-2">
+            <div class="flex justify-between">
+              <h4 class="font-medium">${conversation.otherUserName || 'User'}</h4>
+              <span class="text-xs text-gray-500">${timeStr}</span>
+            </div>
+            <p class="text-sm text-gray-600 truncate">${conversation.lastMessage || 'Start a conversation'}</p>
+          </div>
+          ${conversation.unreadCount > 0 ? `
+            <div class="unread-indicator">${conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}</div>
+          ` : ''}
+        </div>
+      `;
+      
+      // Add click event
+      div.addEventListener('click', () => {
+        openConversation(conversation.otherUserId, conversation.otherUserName, conversation.otherUserPhoto);
+      });
+      
+      return div;
+    }
+    
+    async function openConversation(userId, userName, userPhoto) {
+      try {
+        // Update UI
+        document.getElementById('no-conversation-selected').classList.add('hidden');
+        document.getElementById('chat-area').classList.remove('hidden');
+        
+        // Update active conversation
+        document.querySelectorAll('.conversation-item').forEach(item => {
+          item.classList.remove('active');
+          if (item.dataset.userId === userId) {
+            item.classList.add('active');
+          }
+        });
+        
+        // Set user info
+        document.getElementById('chat-user-name').textContent = userName || 'User';
+        document.getElementById('chat-user-photo').src = userPhoto || '/api/placeholder/40/40';
+        
+        // Remove old listeners
+        if (messagesListener) {
+          messagesListener();
+          messagesListener = null;
+        }
+        
+        if (typingListener) {
+          typingListener();
+          typingListener = null;
+        }
+        
+        // Start or get conversation
+        const convo = await chatService.startDirectConversation(userId);
+        
+        // Update current chat
+        currentChatId = convo.chatId;
+        currentOtherUserId = userId;
+        
+        // Clear messages
+        document.getElementById('chat-messages').innerHTML = '';
+        
+        // Listen for messages
+        messagesListener = chatService.listenToDirectMessages(userId, messages => {
+          renderDirectMessages(messages);
+        });
+        
+        // Listen for typing
+        typingListener = chatService.listenToDirectChatTyping(userId, isTyping => {
+          const typingIndicator = document.getElementById('typing-indicator');
+          if (isTyping) {
+            typingIndicator.classList.remove('hidden');
+          } else {
+            typingIndicator.classList.add('hidden');
+          }
+        });
+      } catch (error) {
+        console.error('Error opening conversation:', error);
+        errorHandler.showToast('Failed to open conversation', 'error');
+      }
+    }
+    
+    function renderDirectMessages(messages) {
+      const messagesContainer = document.getElementById('chat-messages');
+      
+      // Store scroll position info
+      const wasAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 100;
+      
+      let html = '';
+      
+      // Group messages by date
+      let lastDate = null;
+      let lastSenderId = null;
+      
+      messages.forEach((message, index) => {
+        const timestamp = new Date(message.timestamp);
+        const messageDate = new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate());
+        
+        // Add date divider if the date changes
+        if (!lastDate || messageDate.getTime() !== lastDate.getTime()) {
+          html += createDateDivider(messageDate);
+          lastDate = messageDate;
+          lastSenderId = null; // Reset sender for new day
+        }
+        
+        // Determine if this message is from current user
+        const isCurrentUser = message.userId === currentUser.uid;
+        
+        // Determine if we should show the sender info
+        // Show if: first message, different sender than previous, or more than 5 minutes from the previous
+        const showSender = !lastSenderId || lastSenderId !== message.userId || 
+                         (index > 0 && (message.timestamp - messages[index - 1].timestamp) > 5 * 60 * 1000);
+        
+        // Add the message
+        html += createMessageElement(message, isCurrentUser, showSender);
+        
+        // Update last sender
+        lastSenderId = message.userId;
+      });
+      
+      // Update DOM
+      messagesContainer.innerHTML = html;
+      
+      // Scroll to bottom if was at bottom before or it's the first load
+      if (wasAtBottom) {
+        scrollToBottom();
+      }
+    }
+    
+    function createDateDivider(date) {
+      const now = new Date();
+      let dateText;
+      
+      if (date.getFullYear() === now.getFullYear() &&
+          date.getMonth() === now.getMonth() &&
+          date.getDate() === now.getDate()) {
+        dateText = 'Today';
+      } else if (date.getFullYear() === now.getFullYear() &&
+                date.getMonth() === now.getMonth() &&
+                date.getDate() === now.getDate() - 1) {
+        dateText = 'Yesterday';
+      } else {
+        dateText = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      
+      return `
+        <div class="flex items-center justify-center my-4">
+          <div class="border-b border-gray-200 flex-grow"></div>
+          <div class="mx-4 text-xs text-gray-500">${dateText}</div>
+          <div class="border-b border-gray-200 flex-grow"></div>
+        </div>
+      `;
+    }
+    
+    function createMessageElement(message, isCurrentUser, showSender) {
+      const timestamp = new Date(message.timestamp);
+      const time = formatTime(timestamp);
+      const alignmentClass = isCurrentUser ? 'justify-end' : 'justify-start';
+      const bubbleClass = isCurrentUser ? 'outgoing' : 'incoming';
+      
+      let mediaElement = '';
+      if (message.mediaUrl) {
+        if (message.mediaType === 'image') {
+          mediaElement = `
+            <div class="mb-2">
+              <img src="${message.mediaUrl}" alt="Shared image" class="rounded-lg max-h-64 cursor-pointer" onclick="window.open('${message.mediaUrl}', '_blank')">
+            </div>
+          `;
+        } else if (message.mediaType === 'video') {
+          mediaElement = `
+            <div class="mb-2">
+              <video src="${message.mediaUrl}" controls class="rounded-lg max-h-64 max-w-full"></video>
+            </div>
+          `;
+        }
+      }
+      
+      // Determine if we should show sender avatar and name
+      let senderElement = '';
+      if (showSender && !isCurrentUser) {
+        senderElement = `
+          <div class="flex items-center mb-1">
+            <div class="w-6 h-6 rounded-full overflow-hidden mr-2">
+              <img src="${message.photoURL || '/api/placeholder/24/24'}" alt="${message.displayName || 'User'}" class="w-full h-full object-cover">
+            </div>
+            <div class="text-xs font-medium">${message.displayName || 'User'}</div>
+          </div>
+        `;
+      }
+      
+      return `
+        <div class="flex ${alignmentClass} mb-3">
+          <div class="max-w-[80%]">
+            ${senderElement}
+            <div class="message-bubble ${bubbleClass} p-3">
+              ${mediaElement}
+              <div>${message.text}</div>
+            </div>
+            <div class="message-timestamp text-gray-500 ${isCurrentUser ? 'text-right' : 'text-left'}">${time}</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    async function sendMessage() {
+      const messageInput = document.getElementById('message-input');
+      const message = messageInput.value.trim();
+      
+      // Don't send empty messages (unless there's media)
+      if (!message && !mediaFile) return;
+      
+      // Check if we have an active conversation
+      if (!currentOtherUserId) {
+        errorHandler.showToast('No active conversation', 'error');
+        return;
+      }
+      
+      try {
+        messageInput.disabled = true;
+        
+        let mediaUrl = null;
+        let mediaType = null;
+        
+        // Upload media if present
+        if (mediaFile) {
+          const uploadResult = await chatService.uploadChatMedia(
+            mediaFile,
+            'direct',
+            currentChatId
+          );
+          
+          mediaUrl = uploadResult.url;
+          mediaType = uploadResult.type;
+        }
+        
+        // Send message
+        await chatService.sendDirectMessage(
+          currentOtherUserId,
+          message,
+          mediaUrl,
+          mediaType
+        );
+        
+        // Clear input and media
+        messageInput.value = '';
+        removeMedia();
+        
+        // Stop typing indicator
+        chatService.setDirectChatTyping(currentOtherUserId, false);
+        
+        // Scroll to bottom
+        scrollToBottom();
+      } catch (error) {
+        console.error('Error sending message:', error);
+        errorHandler.showToast('Failed to send message', 'error');
+      } finally {
+        messageInput.disabled = false;
+        messageInput.focus();
+      }
+    }
+    
+    function handleTyping() {
+      if (!currentOtherUserId) return;
+      
+      // Set typing indicator
+      chatService.setDirectChatTyping(currentOtherUserId, true);
+      
+      // Clear previous timeout
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+      
+      // Auto-cancel typing after 5 seconds of inactivity
+      typingTimeout = setTimeout(() => {
+        if (currentOtherUserId) {
+          chatService.setDirectChatTyping(currentOtherUserId, false);
+        }
+      }, 5000);
+    }
+    
+    function handleMediaUpload(file) {
+      if (!file) return;
+      
+      // Check file size (max 5MB)
+      const maxSizeInBytes = 5 * 1024 * 1024;
+      if (file.size > maxSizeInBytes) {
+        errorHandler.showToast('File is too large. Maximum size is 5MB.', 'error');
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.match('image.*') && !file.type.match('video.*')) {
+        errorHandler.showToast('Only images and videos are supported.', 'error');
+        return;
+      }
+      
+      // Store file
+      mediaFile = file;
+      
+      // Show preview
+      const mediaPreview = document.getElementById('media-preview');
+      const mediaPreviewImage = document.getElementById('media-preview-image');
+      const mediaPreviewName = document.getElementById('media-preview-name');
+      
+      mediaPreviewName.textContent = file.name;
+      
+      if (file.type.match('image.*')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          mediaPreviewImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // For videos, use a generic icon
+        mediaPreviewImage.src = '/assets/images/icons/video-icon.svg';
+      }
+      
+      mediaPreview.classList.remove('hidden');
+    }
+    
+    function removeMedia() {
+      mediaFile = null;
+      document.getElementById('media-upload-input').value = '';
+      document.getElementById('media-preview').classList.add('hidden');
+    }
+    
+    function scrollToBottom() {
+      const messagesContainer = document.getElementById('chat-messages');
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    }
+    
+    function openNewMessageModal() {
+      document.getElementById('new-message-modal').classList.remove('hidden');
+      document.getElementById('user-search').value = '';
+      document.getElementById('user-search-results').innerHTML = '';
+      document.getElementById('user-search').focus();
+    }
+    
+    function closeNewMessageModal() {
+      document.getElementById('new-message-modal').classList.add('hidden');
+    }
+    
+    async function searchUsers(query) {
+      if (!query || query.length < 2) {
+        document.getElementById('user-search-results').innerHTML = '';
+        return;
+      }
+      
+      try {
+        const db = firebase.firestore();
+        const usersRef = db.collection('users');
+        
+        // Search by display name or email
+        const querySnapshot = await usersRef
+          .where('displayName', '>=', query)
+          .where('displayName', '<=', query + '\uf8ff')
+          .limit(10)
+          .get();
+        
+        // Display results
+        const resultsContainer = document.getElementById('user-search-results');
+        
+        if (querySnapshot.empty) {
+          resultsContainer.innerHTML = '<p class="text-center py-3 text-gray-500">No users found</p>';
+          return;
+        }
+        
+        let html = '';
+        querySnapshot.forEach(doc => {
+          const user = doc.data();
+          
+          // Skip current user
+          if (doc.id === currentUser.uid) return;
+          
+          html += `
+            <div class="user-result flex items-center p-3 hover:bg-gray-50 cursor-pointer" data-user-id="${doc.id}">
+              <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mr-3">
+                <img src="${user.photoURL || '/api/placeholder/40/40'}" alt="${user.displayName || 'User'}" class="w-full h-full object-cover">
+              </div>
+              <div>
+                <h4 class="font-medium">${user.displayName || 'User'}</h4>
+                <p class="text-sm text-gray-600">${user.email || ''}</p>
+              </div>
+            </div>
+          `;
+        });
+        
+        resultsContainer.innerHTML = html;
+        
+        // Add click events
+        document.querySelectorAll('.user-result').forEach(result => {
+          result.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const userName = this.querySelector('h4').textContent;
+            const userPhoto = this.querySelector('img').src;
+            
+            // Close modal
+            closeNewMessageModal();
+            
+            // Open conversation
+            openConversation(userId, userName, userPhoto);
+          });
+        });
+      } catch (error) {
+        console.error('Error searching users:', error);
+      }
+    }
+    
+    function filterConversations(query) {
+      if (!query) {
+        // Show all conversations
+        document.querySelectorAll('.conversation-item').forEach(item => {
+          item.classList.remove('hidden');
+        });
+        return;
+      }
+      
+      // Filter conversations
+      document.querySelectorAll('.conversation-item').forEach(item => {
+        const userName = item.querySelector('h4').textContent.toLowerCase();
+        const lastMessage = item.querySelector('p').textContent.toLowerCase();
+        
+        if (userName.includes(query) || lastMessage.includes(query)) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    }
+    
+    async function confirmBlockUser(userId) {
+      if (confirm('Are you sure you want to block this user? You will no longer receive messages from them.')) {
+        try {
+          await chatService.blockUser(userId);
+          
+          // Close conversation
+          closeCurrentConversation();
+          
+          errorHandler.showToast('User blocked successfully', 'success');
+        } catch (error) {
+          console.error('Error blocking user:', error);
+          errorHandler.showToast('Failed to block user', 'error');
+        }
+      }
+    }
+    
+    function closeCurrentConversation() {
+      // Clear current chat
+      currentChatId = null;
+      currentOtherUserId = null;
+      
+      // Remove listeners
+      if (messagesListener) {
+        messagesListener();
+        messagesListener = null;
+      }
+      
+      if (typingListener) {
+        typingListener();
+        typingListener = null;
+      }
+      
+      // Update UI
+      document.getElementById('chat-area').classList.add('hidden');
+      document.getElementById('no-conversation-selected').classList.remove('hidden');
+      
+      // Reset active conversation
+      document.querySelectorAll('.conversation-item').forEach(item => {
+        item.classList.remove('active');
+      });
+    }
+    
+    // Debounce function for search
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+    
+    // Clean up resources when navigating away
+    window.addEventListener('beforeunload', function() {
+      // Remove listeners
+      if (messagesListener) {
+        messagesListener();
+      }
+      
+      if (typingListener) {
+        typingListener();
+      }
+      
+      if (conversationsListener) {
+        conversationsListener();
+      }
+    });
+  </script>
+</body>
+</html>

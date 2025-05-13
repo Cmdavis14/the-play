@@ -1,0 +1,53 @@
+<div class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" id="vibeCheckModal">
+  <div class="bg-white rounded-xl w-11/12 max-w-md p-6" onclick="event.stopPropagation();">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">Post a Vibe Check</h3>
+      <button class="text-gray-500 hover:text-gray-700 close-modal-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mb-4">
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center upload-container" style="cursor: pointer;">
+        <i class="fas fa-camera text-4xl text-gray-400 mb-2"></i>
+        <p class="text-gray-500">Tap to add photos or videos</p>
+      </div>
+    </div>
+    <div class="mb-4">
+      <input type="text" placeholder="Which event are you at?" class="w-full p-3 border border-gray-300 rounded-lg event-input">
+    </div>
+    <div class="mb-4">
+      <textarea placeholder="How's the vibe? (optional)" class="w-full p-3 border border-gray-300 rounded-lg h-24 vibe-description"></textarea>
+    </div>
+    <div class="flex justify-end">
+      <button class="btn-secondary post-vibe-btn">Post Vibe Check</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  console.log("Vibe check modal loaded");
+  
+  // Make sure the close button works
+  const closeBtn = document.querySelector('#vibeCheckModal .close-modal-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      console.log("Close button clicked");
+      const modal = document.getElementById('vibeCheckModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      }
+    });
+  }
+  
+  // Make sure the modal closes when clicking outside
+  const modal = document.getElementById('vibeCheckModal');
+  if (modal) {
+    modal.addEventListener('click', function(event) {
+      if (event.target === modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      }
+    });
+  }
+</script>

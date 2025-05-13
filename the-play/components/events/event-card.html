@@ -1,0 +1,33 @@
+<!-- Create file: components/event-card.html -->
+<div class="event-card bg-white">
+  <div class="relative">
+    <img src="/api/placeholder/400/250" alt="Event Image" class="w-full h-48 object-cover">
+    <div class="absolute top-3 right-3 vibe-score">
+      <i class="fas fa-fire mr-1"></i> <span class="event-score">0.0</span>
+    </div>
+    <div class="absolute top-3 left-3 bg-white text-black px-3 py-1 rounded-full text-sm font-medium">
+      <span class="event-time">TBD</span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="flex justify-between items-start mb-2">
+      <h3 class="text-lg font-bold event-title">Event Title</h3>
+      <button class="text-gray-400 hover:text-gray-700 bookmark-btn">
+        <i class="fas fa-bookmark"></i>
+      </button>
+    </div>
+    <div class="flex items-center mb-3">
+      <span class="text-sm text-gray-600 mr-4">
+        <i class="fas fa-map-marker-alt mr-1"></i> <span class="event-location">Location</span>
+      </span>
+      <span class="text-sm text-gray-600">
+        <i class="fas fa-users mr-1"></i> <span class="event-attendees">0</span> going
+      </span>
+    </div>
+    <p class="text-sm text-gray-600 mb-4 event-description">Event description goes here.</p>
+    <div class="flex justify-between items-center">
+      <span class="text-purple-600 font-semibold event-price">$0</span>
+      <button class="btn-primary text-sm event-action-btn">Get Tickets</button>
+    </div>
+  </div>
+</div>

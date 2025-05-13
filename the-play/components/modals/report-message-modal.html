@@ -1,0 +1,133 @@
+<div class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" id="reportMessageModal">
+  <div class="bg-white rounded-xl w-11/12 max-w-md p-6" onclick="event.stopPropagation();">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">Report Message</h3>
+      <button class="text-gray-500 hover:text-gray-700 close-modal-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mb-4">
+      <p class="text-gray-700 mb-4">Why are you reporting this message?</p>
+      <form id="report-form">
+        <div class="space-y-2">
+          <label class="flex items-center">
+            <input type="radio" name="report-reason" value="spam" class="mr-3">
+            <span>Spam or unwanted content</span>
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="report-reason" value="inappropriate" class="mr-3">
+            <span>Inappropriate content</span>
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="report-reason" value="harassment" class="mr-3">
+            <span>Harassment or bullying</span>
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="report-reason" value="illegal" class="mr-3">
+            <span>Illegal activities</span>
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="report-reason" value="other" class="mr-3">
+            <span>Other</span>
+          </label>
+        </div>
+        <div class="mt-4">
+          <label for="report-description" class="block text-gray-700 text-sm font-medium mb-2">Additional details (optional):</label>
+          <textarea id="report-description" rows="3" class="w-full border border-gray-300 rounded-lg p-2"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="flex justify-end space-x-3">
+      <button type="button" class="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 close-modal-btn">Cancel</button>
+      <button type="button" id="submit-report" class="btn-primary px-6 py-3">Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import chatService from '../../scripts/services/chat-service.js';
+  import errorHandler from '../../scripts/utils/error-handler.js';
+  import { openModal, closeModal } from '../../scripts/components/modals.js';
+  
+  let reportMessageId = null;
+  let reportRoomId = null;
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    // Close modal functionality
+    document.querySelectorAll('#reportMessageModal .close-modal-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        closeModal('reportMessageModal');
+      });
+    });
+    
+    // Close when clicking outside
+    document.getElementById('reportMessageModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal('reportMessageModal');
+      }
+    });
+    
+    // Submit report
+    document.getElementById('submit-report').addEventListener('click', submitReport);
+  });
+  
+  function initializeReportModal(messageId, roomId) {
+    // Store message and room ID
+    reportMessageId = messageId;
+    reportRoomId = roomId;
+    
+    // Reset form
+    document.getElementById('report-form').reset();
+    document.getElementById('report-description').value = '';
+    
+    // Open modal
+    openModal('reportMessageModal');
+  }
+  
+  async function submitReport() {
+    if (!reportMessageId || !reportRoomId) {
+      errorHandler.showToast('Error reporting message. Please try again.', 'error');
+      closeModal('reportMessageModal');
+      return;
+    }
+    
+    // Get selected reason
+    const reasonEl = document.querySelector('input[name="report-reason"]:checked');
+    if (!reasonEl) {
+      errorHandler.showToast('Please select a reason for your report.', 'warning');
+      return;
+    }
+    
+    const reason = reasonEl.value;
+    const description = document.getElementById('report-description').value.trim();
+    
+    // Disable submit button
+    const submitBtn = document.getElementById('submit-report');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+    
+    try {
+      // Submit report
+      await chatService.reportMessage(reportMessageId, reportRoomId, {
+        reason,
+        description
+      });
+      
+      // Close modal
+      closeModal('reportMessageModal');
+      
+      // Show success message
+      errorHandler.showToast('Report submitted. Thank you for helping keep The Play safe.', 'success');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      errorHandler.showToast('Failed to submit report. Please try again.', 'error');
+    } finally {
+      // Reset button
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Submit Report';
+    }
+  }
+  
+  // Export function to initialize modal
+  window.initializeReportModal = initializeReportModal;
+</script>

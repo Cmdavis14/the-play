@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Play - Sign Up / Login</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/styles/auth.css">
+  <link rel="stylesheet" href="../../assets/styles/variables.css">
+  <link rel="stylesheet" href="../../assets/styles/layout.css">
+  <link rel="stylesheet" href="../../assets/styles/components.css">
+
+  
+  <!--Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  
+  <!-- First load Firebase config -->
+  <script src="../../scripts/firebase/config.js"></script>
+  
+  <!-- REMOVED the old auth.js script that was causing conflicts -->
+</head>
+<body>
+  <!-- Intro Animation Overlay -->
+  <div class="intro-overlay" id="intro-overlay">
+    <div class="intro-logo">The Play</div>
+  </div>
+
+  <div class="main-content flex items-center justify-center p-4" id="main-content">
+    <div class="w-full">
+      <!-- Brand Header -->
+      <div class="text-center mb-6">
+        <div class="inline-block logo-pulse">
+          <h1 class="text-4xl font-bold gradient-text">The Play</h1>
+        </div>
+        <p class="text-gray-600 text-lg mt-2">Find the vibe. Be the vibe.</p>
+      </div>
+      
+      <!-- Auth Card -->
+      <div class="auth-card bg-white w-full max-w-md mx-auto">
+        <!-- Tab Navigation -->
+        <div class="flex border-b border-gray-200">
+          <button id="signup-tab" class="flex-1 py-4 text-center font-medium tab-active" onclick="switchTab('signup')">Sign Up</button>
+          <button id="login-tab" class="flex-1 py-4 text-center font-medium text-gray-500" onclick="switchTab('login')">Log In</button>
+        </div>
+        
+        <!-- Sign Up Form -->
+        <div id="signup-form" class="p-8">
+          <form> <!-- Removed the onsubmit to use the new form validation -->
+            <div class="mb-4">
+              <label for="signup-email" class="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
+              <input type="email" id="signup-email" placeholder="your@email.com" required
+                     class="input-field w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none">
+            </div>
+            
+            <div class="mb-6">
+              <label for="signup-password" class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+              <input type="password" id="signup-password" placeholder="Create a secure password" required
+                     class="input-field w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none">
+              <p class="text-xs text-gray-500 mt-1">Password must be at least 6 characters</p>
+            </div>
+            
+            <div class="error-message mb-4" id="signup-error">
+              <!-- Error messages will appear here -->
+            </div>
+            
+            <div class="success-message mb-4" id="signup-success">
+              <!-- Success messages will appear here -->
+            </div>
+            
+            <button type="submit" class="btn-primary w-full py-3 rounded-lg font-medium">
+              Create Account
+            </button>
+            
+            <div class="mt-6 text-center">
+              <p class="text-sm text-gray-600">
+                Already have an account? 
+                <a href="#" class="text-blue-600 font-medium" onclick="switchTab('login')">Log in</a>
+              </p>
+            </div>
+          </form>
+        </div>
+        
+        <!-- Login Form (Hidden by default) -->
+        <div id="login-form" class="p-8 hidden">
+          <form> <!-- Removed the onsubmit to use the new form validation -->
+            <div class="mb-4">
+              <label for="login-email" class="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
+              <input type="email" id="login-email" placeholder="your@email.com" required
+                     class="input-field w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none">
+            </div>
+            
+            <div class="mb-6">
+              <label for="login-password" class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+              <input type="password" id="login-password" placeholder="Enter your password" required
+                     class="input-field w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none">
+              <div class="flex justify-end mt-1">
+                <a href="#" class="text-xs text-blue-600">Forgot password?</a>
+              </div>
+            </div>
+            
+            <div class="error-message mb-4" id="login-error">
+              <!-- Error messages will appear here -->
+            </div>
+            
+            <button type="submit" class="btn-primary w-full py-3 rounded-lg font-medium">
+              Log In
+            </button>
+            
+            <div class="mt-6 text-center">
+              <p class="text-sm text-gray-600">
+                Don't have an account? 
+                <a href="#" class="text-blue-600 font-medium" onclick="switchTab('signup')">Sign up</a>
+              </p>
+            </div>
+          </form>
+        </div>
+        
+        <!-- Social Login -->
+        <div class="px-8 pb-8">
+          <div class="relative my-4">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <button type="button" class="flex items-center justify-center py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50" 
+                    id="google-signin-btn">
+              <i class="fab fa-google text-red-500 mr-2"></i>
+              Google
+            </button>
+            <button type="button" class="flex items-center justify-center py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    id="facebook-signin-btn">
+              <i class="fab fa-facebook text-blue-600 mr-2"></i>
+              Facebook
+            </button>
+          </div>
+        </div>
+        
+        <!-- User Logged In Section (Hidden by default) -->
+        <div id="user-logged-in" class="p-8 text-center hidden">
+          <div class="mb-6">
+            <div class="w-20 h-20 rounded-full bg-gray-200 mx-auto mb-4 overflow-hidden">
+              <img id="user-profile-pic" src="/api/placeholder/100/100" alt="Profile" class="w-full h-full object-cover">
+            </div>
+            <h3 id="user-display-name" class="text-xl font-bold">User Name</h3>
+            <p id="user-email" class="text-gray-600">user@example.com</p>
+          </div>
+          
+          <div class="mb-6">
+            <p class="text-green-600 mb-4">
+              <i class="fas fa-check-circle mr-2"></i>
+              You're successfully logged in!
+            </p>
+            <p class="text-gray-600">Redirecting to main page...</p>
+          </div>
+          
+          <button id="logout-btn" class="btn-primary w-full py-3 rounded-lg font-medium">
+            Log Out
+          </button>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="text-center mt-8 text-sm text-gray-600">
+        <p>© 2025 The Play. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching functionality
+    function switchTab(tab) {
+      // Update tab styling
+      if (tab === 'signup') {
+        document.getElementById('signup-tab').classList.add('tab-active');
+        document.getElementById('signup-tab').classList.remove('text-gray-500');
+        document.getElementById('login-tab').classList.remove('tab-active');
+        document.getElementById('login-tab').classList.add('text-gray-500');
+        document.getElementById('signup-form').classList.remove('hidden');
+        document.getElementById('login-form').classList.add('hidden');
+      } else {
+        document.getElementById('login-tab').classList.add('tab-active');
+        document.getElementById('login-tab').classList.remove('text-gray-500');
+        document.getElementById('signup-tab').classList.remove('tab-active');
+        document.getElementById('signup-tab').classList.add('text-gray-500');
+        document.getElementById('login-form').classList.remove('hidden');
+        document.getElementById('signup-form').classList.add('hidden');
+      }
+      
+      // Hide user logged in section if visible
+      document.getElementById('user-logged-in').classList.add('hidden');
+      
+      // Clear any error messages
+      document.getElementById('signup-error').style.display = 'none';
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('signup-success').style.display = 'none';
+    }
+
+    // Intro animation
+    document.addEventListener('DOMContentLoaded', function() {
+      // Wait for animation to complete
+      setTimeout(function() {
+        // Fade out the intro overlay
+        const introOverlay = document.getElementById('intro-overlay');
+        introOverlay.style.opacity = '0';
+        
+        // Show the main content
+        const mainContent = document.getElementById('main-content');
+        mainContent.classList.add('visible');
+        
+        // Remove the overlay after it fades out
+        setTimeout(function() {
+          introOverlay.style.display = 'none';
+        }, 500);
+      }, 2500); // This should match the duration of the animation
+      
+      // Check if user is already logged in
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          console.log('User is already logged in, redirecting to app...');
+          // Redirect to app page
+          window.location.href = '../../pages/app/index.html?uid=' + user.uid;
+        }
+      });
+    });
+    
+  </script>
+  
+  <!-- Load the new modules -->
+  <script type="module">
+    // Import necessary modules
+    import { setupFormValidation } from '../../scripts/auth/form-validation.js';
+    import authentication from '../../scripts/auth/authentication.js';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM content loaded, setting up form validation');
+      
+      // Set up form validation
+      setupFormValidation();
+      
+      // Set up logout button
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function() {
+          try {
+            const result = await authentication.logOut();
+            if (result.success) {
+              window.location.href = '../../pages/auth/login.html';
+            } else {
+              alert('Logout failed: ' + result.error);
+            }
+          } catch (error) {
+            console.error('Logout error:', error);
+            alert('An error occurred during logout');
+          }
+        });
+      }
+      
+      // Set up Google and Facebook buttons
+      const googleBtn = document.getElementById('google-signin-btn');
+      if (googleBtn) {
+        googleBtn.addEventListener('click', async function() {
+          try {
+            const result = await authentication.signInWithGoogle();
+            if (result.success) {
+              // Redirect happens in the form-validation.js
+            }
+          } catch (error) {
+            console.error('Google sign-in error:', error);
+          }
+        });
+      }
+      
+      const facebookBtn = document.getElementById('facebook-signin-btn');
+      if (facebookBtn) {
+        facebookBtn.addEventListener('click', async function() {
+          try {
+            const result = await authentication.signInWithFacebook();
+            if (result.success) {
+              // Redirect happens in the form-validation.js
+            }
+          } catch (error) {
+            console.error('Facebook sign-in error:', error);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
