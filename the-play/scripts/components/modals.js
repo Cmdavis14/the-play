@@ -1,5 +1,5 @@
 // Create file: scripts/components/modals.js
-import { loadComponent } from '../utils/component-Loader.js';
+import { loadComponent } from '../utils/component-loader.js';
 import errorHandler from '../utils/error-handler.js';
 import loadingManager from './loading.js';
 
