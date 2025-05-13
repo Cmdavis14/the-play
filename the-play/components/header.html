@@ -1,16 +1,16 @@
 <nav class="flex items-center justify-between px-8 py-4 bg-white shadow-sm sticky top-0 z-50">
   <!-- Logo - visible on all screens -->
   <div class="flex items-center">
-    <h1 class="text-2xl font-bold gradient-text">The Play</h1>
+    <a href="/pages/app/index.html" class="text-2xl font-bold gradient-text">The Play</a>
   </div>
   
   <!-- Desktop Navigation - hidden on mobile -->
   <div class="hidden md:flex items-center space-x-8">
-    <a href="../../pages/app/index.html" class="font-medium text-gray-700 hover:text-purple-600">Home</a>
-    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Discover</a>
-    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Map</a>
-    <a href="#" class="font-medium text-gray-700 hover:text-purple-600">Popular</a>
-    <a href="../../pages/app/messages.html" class="relative font-medium text-gray-700 hover:text-purple-600">
+    <a href="/pages/app/index.html" class="font-medium text-gray-700 hover:text-purple-600">Home</a>
+    <a href="/pages/app/search.html" class="font-medium text-gray-700 hover:text-purple-600">Discover</a>
+    <a href="/pages/app/map.html" class="font-medium text-gray-700 hover:text-purple-600">Map</a>
+    <a href="/pages/app/index.html?tab=popular" class="font-medium text-gray-700 hover:text-purple-600">Popular</a>
+    <a href="/pages/app/messages.html" class="relative font-medium text-gray-700 hover:text-purple-600">
       <i class="fas fa-envelope mr-1"></i> Messages
       <span id="unread-messages-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
     </a>  
@@ -18,7 +18,7 @@
   
   <!-- Desktop Search Bar - hidden on mobile -->
   <div class="hidden md:block relative mr-4">
-    <form id="header-search-form" action="../../pages/app/search.html" method="get" class="flex items-center">
+    <form id="header-search-form" class="flex items-center">
       <div class="relative w-64">
         <input 
           type="text" 
@@ -44,9 +44,9 @@
   
   <!-- Desktop Action Buttons - hidden on mobile -->
   <div class="hidden md:flex items-center space-x-4">
-    <a href="../../pages/app/create-event.html" class="btn-primary">Create Event</a>
+    <a href="/pages/app/create-event.html" class="btn-primary" id="create-event-btn">Create Event</a>
     <button id="logout-button" class="btn-secondary">Logout</button>
-    <div class="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
+    <div class="w-10 h-10 rounded-full bg-gray-300 overflow-hidden cursor-pointer" id="header-profile-pic-container">
       <img id="header-profile-pic" src="/api/placeholder/100/100" alt="Profile" class="w-full h-full object-cover">
     </div>
   </div>
@@ -68,16 +68,16 @@
 <!-- Mobile Menu (hidden by default) -->
 <div id="mobile-menu" class="hidden md:hidden bg-white shadow-sm px-8 py-4 border-t border-gray-200">
   <div class="flex flex-col space-y-4">
-    <a href="../../pages/app/index.html" class="font-medium text-gray-700 hover:text-purple-600 py-2">Home</a>
-    <a href="#" class="font-medium text-gray-700 hover:text-purple-600 py-2">Discover</a>
-    <a href="#" class="font-medium text-gray-700 hover:text-purple-600 py-2">Map</a>
-    <a href="#" class="font-medium text-gray-700 hover:text-purple-600 py-2">Popular</a>
-    <a href="../../pages/app/messages.html" class="relative font-medium text-gray-700 hover:text-purple-600 py-2">
+    <a href="/pages/app/index.html" class="font-medium text-gray-700 hover:text-purple-600 py-2">Home</a>
+    <a href="/pages/app/search.html" class="font-medium text-gray-700 hover:text-purple-600 py-2">Discover</a>
+    <a href="/pages/app/map.html" class="font-medium text-gray-700 hover:text-purple-600 py-2">Map</a>
+    <a href="/pages/app/index.html?tab=popular" class="font-medium text-gray-700 hover:text-purple-600 py-2">Popular</a>
+    <a href="/pages/app/messages.html" class="relative font-medium text-gray-700 hover:text-purple-600 py-2">
       <i class="fas fa-envelope mr-1"></i> Messages
         <span id="mobile-unread-messages-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
     </a>
     <div class="border-t border-gray-200 py-2"></div>
-    <a href="../../pages/app/create-event.html" class="font-medium text-purple-600 hover:text-purple-700 py-2">Create Event</a>
+    <a href="/pages/app/create-event.html" class="font-medium text-purple-600 hover:text-purple-700 py-2">Create Event</a>
     <button id="mobile-logout-button" class="font-medium text-red-600 hover:text-red-700 py-2 text-left">Logout</button>
   </div>
 </div>
@@ -92,11 +92,12 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <form action="../../pages/app/search.html" method="get">
+      <form id="mobile-search-form">
         <div class="relative">
           <input 
             type="text" 
             name="q" 
+            id="mobile-search-input"
             placeholder="Search events, venues, or categories" 
             class="w-full py-3 pl-10 pr-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             aria-label="Search events in mobile view"
@@ -141,7 +142,7 @@
         
         // Focus on search input
         setTimeout(() => {
-          const mobileSearchInput = mobileSearchOverlay.querySelector('input[name="q"]');
+          const mobileSearchInput = document.getElementById('mobile-search-input');
           if (mobileSearchInput) {
             mobileSearchInput.focus();
           }
@@ -165,100 +166,91 @@
       });
     }
     
-    // Header search form validation
+    // Header search form validation and handling
     const headerSearchForm = document.getElementById('header-search-form');
     if (headerSearchForm) {
       headerSearchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
         const searchInput = headerSearchForm.querySelector('input[name="q"]');
         const query = searchInput.value.trim();
         
         // Prevent empty searches
         if (!query) {
-          e.preventDefault();
           searchInput.focus();
+          return;
         }
+        
+        // Navigate to search page with query
+        window.location.href = "/pages/app/search.html?q=" + encodeURIComponent(query);
       });
     }
-  });
-</script>
-
-<style>
-  /* Include the gradient styles from the mockup */
-  .gradient-text {
-    background: linear-gradient(120deg, #6C63FF, #FF6B6B);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .btn-primary {
-    background: linear-gradient(120deg, #6C63FF, #FF6B6B);
-    color: white;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .btn-secondary {
-    background: #FF6B6B;
-    color: white;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .btn-primary:hover, .btn-secondary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
-  }
-</style>
-
-<script>
-  // Simple direct logout function that works without modules
-  document.getElementById('logout-button').addEventListener('click', function() {
-    console.log("Logout button clicked");
     
-    // First try the modular approach
-    try {
-      import('../../scripts/auth/authentication.js')
-        .then(module => {
-          const authentication = module.default;
-          return authentication.logOut();
-        })
-        .then(result => {
-          if (result.success) {
-            window.location.href = "../../pages/auth/login.html";
-          } else {
-            alert("Error logging out: " + result.error);
-          }
-        })
-        .catch(error => {
-          // Fall back to direct Firebase method if modular approach fails
-          firebaseLogout();
-        });
-    } catch (error) {
-      // Fall back to direct Firebase method
-      firebaseLogout();
+    // Mobile search form handling
+    const mobileSearchForm = document.getElementById('mobile-search-form');
+    if (mobileSearchForm) {
+      mobileSearchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const searchInput = document.getElementById('mobile-search-input');
+        const query = searchInput.value.trim();
+        
+        // Prevent empty searches
+        if (!query) {
+          searchInput.focus();
+          return;
+        }
+        
+        // Navigate to search page with query
+        window.location.href = "/pages/app/search.html?q=" + encodeURIComponent(query);
+        
+        // Close mobile search overlay
+        mobileSearchOverlay.classList.add('hidden');
+        document.body.style.overflow = 'auto'; // Restore scrolling
+      });
     }
     
-    // Direct Firebase logout as fallback
-    function firebaseLogout() {
-      if (typeof firebase !== 'undefined' && firebase.auth) {
-        firebase.auth().signOut().then(() => {
-          console.log("Logged out successfully using direct Firebase method");
-          alert("You have been logged out.");
-          window.location.href = "../../pages/auth/login.html";
-        }).catch((error) => {
-          console.error("Error signing out:", error);
-          alert("Error logging out: " + error.message);
+    // Set up logout handlers for both desktop and mobile
+    const logoutButtons = [
+      document.getElementById('logout-button'),
+      document.getElementById('mobile-logout-button')
+    ];
+    
+    logoutButtons.forEach(button => {
+      if (button) {
+        button.addEventListener('click', function() {
+          console.log("Logout button clicked");
+          
+          // Direct Firebase logout method
+          if (typeof firebase !== 'undefined' && firebase.auth) {
+            firebase.auth().signOut().then(() => {
+              console.log("Logged out successfully");
+              alert("You have been logged out.");
+              window.location.href = "/pages/auth/login.html";
+            }).catch((error) => {
+              console.error("Error signing out:", error);
+              alert("Error logging out: " + error.message);
+            });
+          } else {
+            alert("Firebase is not initialized. Cannot log out.");
+          }
         });
-      } else {
-        alert("Firebase is not initialized. Cannot log out.");
       }
+    });
+    
+    // Profile picture click handler
+    const profilePicContainer = document.getElementById('header-profile-pic-container');
+    if (profilePicContainer) {
+      profilePicContainer.addEventListener('click', function() {
+        window.location.href = '/pages/app/profile.html';
+      });
+    }
+    
+    // Add Create Event button handler
+    const createEventBtn = document.getElementById('create-event-btn');
+    if (createEventBtn) {
+      createEventBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location.href = '/pages/app/create-event.html';
+      });
     }
   });
   
@@ -281,7 +273,7 @@
     
     try {
       // Import chat service
-      const { default: chatService } = await import('../../scripts/services/chat-service.js');
+      const { default: chatService } = await import('/scripts/services/chat-service.js');
       
       // Get unread count
       const unreadCount = await chatService.getUnreadMessagesCount();
@@ -328,3 +320,38 @@
     }
   });
 </script>
+
+<style>
+  /* Include the gradient styles from the mockup */
+  .gradient-text {
+    background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(120deg, #6C63FF, #FF6B6B);
+    color: white;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-secondary {
+    background: #FF6B6B;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-primary:hover, .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+  }
+</style>
